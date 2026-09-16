@@ -1,4 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  analyzeCharacterImageUrl,
+  persistableCharacterImageAssessment,
+  type CharacterBodyPlan,
+  type CharacterImageAssessment,
+} from './character-image-assessment'
 import { LANDMARK_KEYS, humanoidChibiAnalysisAdapter, type HumanoidReferenceAnalysis } from './reference-analysis'
 import './reference-workspace.css'
 
@@ -21,6 +27,7 @@ type ReferenceAsset = {
 type ReferenceSetInput = {
   schemaVersion: 'reference-set/v1'
   modelTypeId: 'humanoid/chibi-v1'
+  description?: string
   updatedAt: string
   references: Partial<Record<ReferenceSlotId, Omit<ReferenceAsset, 'url'>>>
 }
@@ -39,6 +46,17 @@ const examples: Record<ReferenceSlotId, string> = {
   back: '/references/little-guy/back.png',
 }
 
+const bodyPlanLabels: Record<CharacterBodyPlan, string> = {
+  'articulated/humanoid-bipedal': 'Humanoid / bipedal',
+  'articulated/quadrupedal': 'Quadrupedal',
+  'articulated/multi-limbed': 'Multi-limbed',
+  'compact/blob-amorphous': 'Blob / amorphous',
+  'compact/head-dominant': 'Head-dominant',
+  'elongated/serpentine': 'Serpentine / elongated',
+  'radial/other': 'Radial / other',
+  unknown: 'Unresolved',
+}
+
 function readDimensions(url: string) {
   return new Promise<{ width: number; height: number }>((resolve, reject) => {
     const image = new Image()
@@ -48,10 +66,25 @@ function readDimensions(url: string) {
   })
 }
 
-function toInput(references: Partial<Record<ReferenceSlotId, ReferenceAsset>>): ReferenceSetInput {
+function storedDescription() {
+  try {
+    const stored = localStorage.getItem('low-poly-character-studio.reference-set.v1')
+    if (!stored) return ''
+    const parsed = JSON.parse(stored) as { description?: unknown }
+    return typeof parsed.description === 'string' ? parsed.description : ''
+  } catch {
+    return ''
+  }
+}
+
+function toInput(
+  references: Partial<Record<ReferenceSlotId, ReferenceAsset>>,
+  description: string,
+): ReferenceSetInput {
   return {
     schemaVersion: 'reference-set/v1',
     modelTypeId: 'humanoid/chibi-v1',
+    description: description.trim() || undefined,
     updatedAt: new Date().toISOString(),
     references: Object.fromEntries(
       Object.entries(references).map(([slot, asset]) => {
@@ -74,11 +107,15 @@ function referenceDrawerInitiallyCollapsed() {
   return new URLSearchParams(window.location.search).get('references') !== 'open'
 }
 
-async function applyAnalysisToLandmarkEditor(analysis: HumanoidReferenceAnalysis, source: ReferenceAsset) {
+async function clearLandmarkEditor() {
   document.querySelectorAll<HTMLElement>('.imageLayer [data-landmark]').forEach((marker) => {
     marker.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
   })
   await nextFrame()
+}
+
+async function applyAnalysisToLandmarkEditor(analysis: HumanoidReferenceAnalysis, source: ReferenceAsset) {
+  await clearLandmarkEditor()
 
   const canvas = document.querySelector<HTMLElement>('.canvas')
   const editorImage = document.querySelector<HTMLImageElement>('.imageLayer img')
@@ -98,13 +135,15 @@ async function applyAnalysisToLandmarkEditor(analysis: HumanoidReferenceAnalysis
 
 function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
   const [references, setReferences] = useState<Partial<Record<ReferenceSlotId, ReferenceAsset>>>({})
+  const [description, setDescription] = useState(storedDescription)
   const [errors, setErrors] = useState<Partial<Record<ReferenceSlotId, string>>>({})
+  const [genericAnalysis, setGenericAnalysis] = useState<CharacterImageAssessment | null>(null)
   const [analysis, setAnalysis] = useState<HumanoidReferenceAnalysis | null>(null)
   const [analysisStatus, setAnalysisStatus] = useState<'idle' | 'running' | 'complete' | 'error'>('idle')
   const [analysisError, setAnalysisError] = useState<string | null>(null)
   const [collapsed, setCollapsed] = useState(referenceDrawerInitiallyCollapsed)
   const inputRefs = useRef<Partial<Record<ReferenceSlotId, HTMLInputElement | null>>>({})
-  const referenceInput = useMemo(() => toInput(references), [references])
+  const referenceInput = useMemo(() => toInput(references, description), [references, description])
   const referenceCount = Object.keys(references).length
 
   useEffect(() => {
@@ -132,6 +171,15 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
       if (asset?.source === 'upload') URL.revokeObjectURL(asset.url)
     })
   }, [references])
+
+  function resetAnalysis() {
+    setGenericAnalysis(null)
+    setAnalysis(null)
+    setAnalysisStatus('idle')
+    setAnalysisError(null)
+    localStorage.removeItem('low-poly-character-studio.character-image-assessment.v1')
+    localStorage.removeItem('low-poly-character-studio.reference-analysis.v1')
+  }
 
   function toggleCollapsed() {
     setCollapsed((current) => !current)
@@ -171,11 +219,7 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
         }
       })
       setErrors((current) => ({ ...current, [slot]: undefined }))
-      if (slot === 'front') {
-        setAnalysis(null)
-        setAnalysisStatus('idle')
-        setAnalysisError(null)
-      }
+      if (slot === 'front') resetAnalysis()
     } catch (error) {
       URL.revokeObjectURL(url)
       setErrors((current) => ({ ...current, [slot]: error instanceof Error ? error.message : 'Invalid image.' }))
@@ -198,10 +242,9 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
       }] as const
     }))
     setReferences(Object.fromEntries(loaded))
+    setDescription('A compact humanoid character. It stands upright and moves on two legs.')
     setErrors({})
-    setAnalysis(null)
-    setAnalysisStatus('idle')
-    setAnalysisError(null)
+    resetAnalysis()
   }
 
   async function analyzeFrontReference() {
@@ -209,15 +252,29 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
     if (!front) return
     setAnalysisStatus('running')
     setAnalysisError(null)
+
     try {
-      const result = await humanoidChibiAnalysisAdapter.analyzeImageUrl(front.url)
-      await applyAnalysisToLandmarkEditor(result, front)
-      setAnalysis(result)
+      const generic = await analyzeCharacterImageUrl(front.url, { description })
+      setGenericAnalysis(generic)
+      const persistedGeneric = persistableCharacterImageAssessment(generic)
+      localStorage.setItem('low-poly-character-studio.character-image-assessment.v1', JSON.stringify(persistedGeneric))
+      window.dispatchEvent(new CustomEvent('low-poly:character-image-assessment-complete', { detail: persistedGeneric }))
+
+      if (generic.bodyPlan.selected.value === 'articulated/humanoid-bipedal') {
+        const humanoid = await humanoidChibiAnalysisAdapter.analyzeImageUrl(front.url)
+        await applyAnalysisToLandmarkEditor(humanoid, front)
+        setAnalysis(humanoid)
+        localStorage.setItem('low-poly-character-studio.reference-analysis.v1', JSON.stringify(humanoid))
+        window.dispatchEvent(new CustomEvent('low-poly:reference-analysis-complete', { detail: humanoid }))
+      } else {
+        await clearLandmarkEditor()
+        setAnalysis(null)
+        localStorage.removeItem('low-poly-character-studio.reference-analysis.v1')
+      }
+
       setAnalysisStatus('complete')
       setCollapsed(true)
       notifyWorkspaceResize()
-      localStorage.setItem('low-poly-character-studio.reference-analysis.v1', JSON.stringify(result))
-      window.dispatchEvent(new CustomEvent('low-poly:reference-analysis-complete', { detail: result }))
     } catch (error) {
       setAnalysisStatus('error')
       setAnalysisError(error instanceof Error ? error.message : 'Reference analysis failed.')
@@ -232,13 +289,14 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
       delete next[slot]
       return next
     })
-    if (slot === 'front') {
-      setAnalysis(null)
-      setAnalysisStatus('idle')
-      setAnalysisError(null)
-    }
+    if (slot === 'front') resetAnalysis()
     if (inputRefs.current[slot]) inputRefs.current[slot]!.value = ''
   }
+
+  const classifiedPlan = genericAnalysis?.bodyPlan.selected.value ?? 'unknown'
+  const classificationSummary = genericAnalysis
+    ? `${bodyPlanLabels[classifiedPlan]} · ${genericAnalysis.input.usability.value}`
+    : null
 
   return (
     <div className="referenceWorkspace">
@@ -248,8 +306,8 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
             <h2>Reference set</h2>
             <p>
               {collapsed
-                ? `${referenceCount} reference${referenceCount === 1 ? '' : 's'} selected${analysis ? ` · ${Math.round(analysis.confidence.overall * 100)}% confidence` : ''}`
-                : 'Front is required. Side and back improve fidelity. Images remain in this browser.'}
+                ? `${referenceCount} reference${referenceCount === 1 ? '' : 's'} selected${classificationSummary ? ` · ${classificationSummary}` : ''}`
+                : 'Front is required. Side and back improve fidelity. Generic image classification runs before any model-specific interpretation.'}
             </p>
           </div>
           <div className="referenceManagerHeadingActions">
@@ -290,31 +348,70 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
               )
             })}
           </div>
-          {!references.front ? <p className="referenceRequirement" role="status">Add a front reference before generation.</p> : (
+
+          <label className="referenceDescription">
+            <strong>Describe the character</strong>
+            <span>What are we looking at, and anything important we should know about how it should move or work?</span>
+            <textarea
+              rows={3}
+              value={description}
+              onChange={(event) => {
+                setDescription(event.currentTarget.value)
+                resetAnalysis()
+              }}
+              placeholder="Example: A smiling blob with no arms or legs. It moves by bouncing and faces toward its eyes."
+            />
+            <small>Your description gives the analyzer direction. It is stored as a user-provided prior, not treated as visual ground truth.</small>
+          </label>
+
+          {!references.front ? <p className="referenceRequirement" role="status">Add a front reference before analysis.</p> : (
             <section className="referenceAnalysis" aria-label="Automated reference analysis">
               <div>
-                <strong>Automated starting point</strong>
-                <p>Estimate silhouette, proportions, colors, and landmarks locally. Inferred markers remain editable.</p>
+                <strong>Assess character</strong>
+                <p>Assess image quality, isolate the subject, infer orientation and body plan, observe features, then decide whether a supported model-specific analysis should run.</p>
               </div>
               <button type="button" onClick={analyzeFrontReference} disabled={analysisStatus === 'running'}>
-                {analysisStatus === 'running' ? 'Analyzing…' : analysis ? 'Analyze again' : 'Analyze front reference'}
+                {analysisStatus === 'running' ? 'Assessing…' : genericAnalysis ? 'Assess again' : 'Assess image'}
               </button>
+
+              {genericAnalysis ? (
+                <div className={`analysisSummary ${genericAnalysis.decision.outcome}`} role="status">
+                  <strong>{bodyPlanLabels[classifiedPlan]}</strong>
+                  <p>Image quality: {genericAnalysis.input.usability.value}. Facing: {genericAnalysis.orientation.facing.value}. Suggested movement: {genericAnalysis.functional.locomotionHint.value}.</p>
+                  <p>{genericAnalysis.decision.reason}</p>
+                  {classifiedPlan !== 'articulated/humanoid-bipedal' && classifiedPlan !== 'unknown' ? (
+                    <p>Model-specific humanoid landmark mapping was intentionally skipped. A compatible model type can consume this generic assessment later.</p>
+                  ) : null}
+                  {classifiedPlan === 'unknown' ? (
+                    <p>The classifier abstained rather than forcing a model type. The candidate evidence remains available for review or another image-analysis provider.</p>
+                  ) : null}
+                </div>
+              ) : null}
+
               {analysis ? (
                 <div className={`analysisSummary ${analysis.confidence.level}`} role="status">
-                  <strong>{Math.round(analysis.confidence.overall * 100)}% {analysis.confidence.level} confidence</strong>
+                  <strong>Humanoid mapping: {Math.round(analysis.confidence.overall * 100)}% {analysis.confidence.level} confidence</strong>
                   {analysis.warnings.map((warning) => <p key={warning.code}>{warning.message}</p>)}
                 </div>
               ) : null}
-              {analysisError ? <p className="referenceError" role="alert">{analysisError} Uploaded references were preserved; place landmarks manually or retry.</p> : null}
+
+              {analysisError ? <p className="referenceError" role="alert">{analysisError} Uploaded references and description were preserved; correct the input or retry.</p> : null}
             </section>
           )}
+
           <details>
             <summary>Versioned job input</summary>
             <pre>{JSON.stringify(referenceInput, null, 2)}</pre>
           </details>
+          {genericAnalysis ? (
+            <details>
+              <summary>Generic image assessment</summary>
+              <pre>{JSON.stringify(persistableCharacterImageAssessment(genericAnalysis), null, 2)}</pre>
+            </details>
+          ) : null}
           {analysis ? (
             <details>
-              <summary>Versioned analysis result</summary>
+              <summary>Humanoid-specific analysis</summary>
               <pre>{JSON.stringify(analysis, null, 2)}</pre>
             </details>
           ) : null}
