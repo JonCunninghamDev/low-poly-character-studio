@@ -1,0 +1,102 @@
+{
+  "schema_version": "context-manifest/v1",
+  "run": {
+    "id": "context-7f014a7e-0e98-4e5e-94c5-934bbe56cfa0",
+    "created_at": "2026-10-22T15:53:31.996527+00:00"
+  },
+  "agent": {
+    "role": "context",
+    "version": "1.0.0",
+    "service_tier": "basic",
+    "autonomy": "supervised",
+    "mode": "production"
+  },
+  "workflow": "low-poly-character-studio",
+  "goal": "Make the Studio upload-first, infer shape automatically, and ensure confirmation advances reliably.",
+  "readiness": {
+    "ready_for_orchestration": true,
+    "missing_required": [],
+    "missing_recommended": [],
+    "blocking_conflicts": [],
+    "nonblocking_conflicts": []
+  },
+  "normalized_context": {
+    "constraints": "Do not claim general vision, tree generation, additional animations or deployment. GitHub API and pinned Blender download remain external limitations. Existing repository steering remains authoritative.",
+    "product": "Existing React/Vite Studio, Express jobs API, Python/Blender compiler. Preserve humanoid/chibi-v1 gold standard.",
+    "request": "User reports confirmation does nothing, asks to avoid manual markers, and explicitly requires an uploaded image instead of a default image.",
+    "scope": "Fix the merged Studio on develop; preserve explicit examples and manual correction. Automatically assess new front uploads. Ask for type confirmation when uncertain, then infer landmarks without manual placement.",
+    "validation": "Build, Node contract suites and real Chromium workflow at laptop/mobile widths. Browser test includes stale reference metadata, automatic inference after type confirmation, optional reference preservation and persisted generation request. Stops before Blender."
+  },
+  "provenance": [
+    {
+      "key": "product",
+      "value": "Existing React/Vite Studio, Express jobs API, Python/Blender compiler. Preserve humanoid/chibi-v1 gold standard.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high",
+      "observed_at": null
+    },
+    {
+      "key": "request",
+      "value": "User reports confirmation does nothing, asks to avoid manual markers, and explicitly requires an uploaded image instead of a default image.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high",
+      "observed_at": null
+    },
+    {
+      "key": "scope",
+      "value": "Fix the merged Studio on develop; preserve explicit examples and manual correction. Automatically assess new front uploads. Ask for type confirmation when uncertain, then infer landmarks without manual placement.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high",
+      "observed_at": null
+    },
+    {
+      "key": "validation",
+      "value": "Build, Node contract suites and real Chromium workflow at laptop/mobile widths. Browser test includes stale reference metadata, automatic inference after type confirmation, optional reference preservation and persisted generation request. Stops before Blender.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high",
+      "observed_at": null
+    },
+    {
+      "key": "constraints",
+      "value": "Do not claim general vision, tree generation, additional animations or deployment. GitHub API and pinned Blender download remain external limitations. Existing repository steering remains authoritative.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high",
+      "observed_at": null
+    }
+  ],
+  "questions_for_human": [],
+  "capabilities": {
+    "used": [
+      "inspect_context_contract",
+      "normalize_supplied_context",
+      "identify_missing_context",
+      "detect_explicit_conflicts",
+      "produce_context_manifest"
+    ],
+    "available_unused": [
+      "formulate_blocking_questions"
+    ],
+    "locked_by_tier": {
+      "managed": [
+        "retrieve_approved_context",
+        "verify_source_provenance",
+        "evaluate_context_freshness",
+        "generate_role_specific_context",
+        "request_blocking_context_interactively"
+      ],
+      "full": [
+        "continuous_context_maintenance",
+        "automatic_context_enrichment",
+        "sensitivity_classification",
+        "cross_project_context_relationships",
+        "durable_verified_context_updates",
+        "stale_context_monitoring"
+      ]
+    }
+  },
+  "handoff": {
+    "target": "orchestrator",
+    "artifact": "context.json",
+    "allowed": true
+  }
+}

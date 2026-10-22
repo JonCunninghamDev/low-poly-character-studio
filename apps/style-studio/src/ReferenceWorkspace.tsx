@@ -5,7 +5,7 @@ import {
   type CharacterBodyPlan,
   type CharacterImageAssessment,
 } from './character-image-assessment'
-import { LANDMARK_KEYS, humanoidChibiAnalysisAdapter, type HumanoidReferenceAnalysis } from './reference-analysis'
+import { humanoidChibiAnalysisAdapter, type HumanoidReferenceAnalysis } from './reference-analysis'
 import './reference-workspace.css'
 
 type ReferenceSlotId = 'front' | 'side' | 'back'
@@ -103,10 +103,6 @@ function notifyWorkspaceResize() {
   requestAnimationFrame(() => window.dispatchEvent(new Event('low-poly:reference-panel-toggle')))
 }
 
-function referenceDrawerInitiallyCollapsed() {
-  return new URLSearchParams(window.location.search).get('references') !== 'open'
-}
-
 async function clearLandmarkEditor() {
   document.querySelectorAll<HTMLElement>('.imageLayer [data-landmark]').forEach((marker) => {
     marker.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
@@ -114,23 +110,9 @@ async function clearLandmarkEditor() {
   await nextFrame()
 }
 
-async function applyAnalysisToLandmarkEditor(analysis: HumanoidReferenceAnalysis, source: ReferenceAsset) {
-  await clearLandmarkEditor()
-
-  const canvas = document.querySelector<HTMLElement>('.canvas')
-  const editorImage = document.querySelector<HTMLImageElement>('.imageLayer img')
-  if (!canvas || !editorImage) throw new Error('The landmark editor is not ready. Try analysis again after the image appears.')
-
-  const imageRect = editorImage.getBoundingClientRect()
-  if (!imageRect.width || !imageRect.height) throw new Error('The front reference is not visible in the landmark editor.')
-
-  for (const key of LANDMARK_KEYS) {
-    const point = analysis.landmarks[key]
-    const clientX = imageRect.left + (point.x / source.width) * imageRect.width
-    const clientY = imageRect.top + (point.y / source.height) * imageRect.height
-    canvas.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX, clientY }))
-    await nextFrame()
-  }
+async function applyAnalysisToLandmarkEditor(analysis: HumanoidReferenceAnalysis, _source: ReferenceAsset) {
+  window.dispatchEvent(new CustomEvent('low-poly:apply-landmarks', { detail: analysis }))
+  await nextFrame()
 }
 
 function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
@@ -141,7 +123,7 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
   const [analysis, setAnalysis] = useState<HumanoidReferenceAnalysis | null>(null)
   const [analysisStatus, setAnalysisStatus] = useState<'idle' | 'running' | 'complete' | 'error'>('idle')
   const [analysisError, setAnalysisError] = useState<string | null>(null)
-  const [collapsed, setCollapsed] = useState(referenceDrawerInitiallyCollapsed)
+  const [collapsed, setCollapsed] = useState(false)
   const inputRefs = useRef<Partial<Record<ReferenceSlotId, HTMLInputElement | null>>>({})
   const referenceInput = useMemo(() => toInput(references, description), [references, description])
   const referenceCount = Object.keys(references).length
@@ -151,28 +133,33 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
     window.dispatchEvent(new CustomEvent('low-poly:reference-set-change', { detail: referenceInput }))
   }, [referenceInput])
 
+  const analysisRun = useRef(0)
+  const currentReferences = useRef(references)
+  currentReferences.current = references
+
   useEffect(() => {
-    const frontUrl = references.front?.url
-    if (!frontUrl) return
-
-    const syncFrontReference = () => {
-      const editorImage = document.querySelector<HTMLImageElement>('.imageLayer img')
-      if (editorImage && editorImage.src !== frontUrl) editorImage.src = frontUrl
-    }
-
-    syncFrontReference()
-    const observer = new MutationObserver(syncFrontReference)
-    observer.observe(document.body, { childList: true, subtree: true })
-    return () => observer.disconnect()
+    const front = references.front
+    window.dispatchEvent(new CustomEvent('low-poly:front-reference-selected', { detail: front ?? null }))
+    if (front) void analyzeFrontReference()
+    // Analyze each new front image once. Description edits use the explicit retry.
   }, [references.front?.url])
 
   useEffect(() => () => {
-    Object.values(references).forEach((asset) => {
+    analysisRun.current += 1
+    Object.values(currentReferences.current).forEach((asset) => {
       if (asset?.source === 'upload') URL.revokeObjectURL(asset.url)
     })
-  }, [references])
+  }, [])
+
+  useEffect(() => {
+    const open = () => setCollapsed(false)
+    window.addEventListener('low-poly:open-references', open)
+    return () => window.removeEventListener('low-poly:open-references', open)
+  }, [])
 
   function resetAnalysis() {
+    analysisRun.current += 1
+    window.dispatchEvent(new Event('low-poly:analysis-invalidated'))
     setGenericAnalysis(null)
     setAnalysis(null)
     setAnalysisStatus('idle')
@@ -247,35 +234,43 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
     resetAnalysis()
   }
 
-  async function analyzeFrontReference() {
+  async function analyzeFrontReference(useHumanoid = false) {
     const front = references.front
     if (!front) return
+    const run = ++analysisRun.current
     setAnalysisStatus('running')
     setAnalysisError(null)
 
     try {
       const generic = await analyzeCharacterImageUrl(front.url, { description })
+      if (run !== analysisRun.current) return
       setGenericAnalysis(generic)
       const persistedGeneric = persistableCharacterImageAssessment(generic)
       localStorage.setItem('low-poly-character-studio.character-image-assessment.v1', JSON.stringify(persistedGeneric))
       window.dispatchEvent(new CustomEvent('low-poly:character-image-assessment-complete', { detail: persistedGeneric }))
 
-      if (generic.bodyPlan.selected.value === 'articulated/humanoid-bipedal') {
-        const humanoid = await humanoidChibiAnalysisAdapter.analyzeImageUrl(front.url)
+      if (generic.bodyPlan.selected.value === 'articulated/humanoid-bipedal' || useHumanoid) {
+        const inferredHumanoid = await humanoidChibiAnalysisAdapter.analyzeImageUrl(front.url)
+        const humanoid = { ...inferredHumanoid, ...(useHumanoid ? { modelTypeSelection: { source: 'user', modelTypeId: 'humanoid/chibi-v1' } } : {}) }
+        if (run !== analysisRun.current) return
         await applyAnalysisToLandmarkEditor(humanoid, front)
+        if (run !== analysisRun.current) return
         setAnalysis(humanoid)
         localStorage.setItem('low-poly-character-studio.reference-analysis.v1', JSON.stringify(humanoid))
         window.dispatchEvent(new CustomEvent('low-poly:reference-analysis-complete', { detail: humanoid }))
       } else {
         await clearLandmarkEditor()
+        if (run !== analysisRun.current) return
         setAnalysis(null)
         localStorage.removeItem('low-poly-character-studio.reference-analysis.v1')
       }
 
+      if (run !== analysisRun.current) return
       setAnalysisStatus('complete')
-      setCollapsed(true)
+      setCollapsed(generic.bodyPlan.selected.value === 'articulated/humanoid-bipedal' || useHumanoid)
       notifyWorkspaceResize()
     } catch (error) {
+      if (run !== analysisRun.current) return
       setAnalysisStatus('error')
       setAnalysisError(error instanceof Error ? error.message : 'Reference analysis failed.')
     }
@@ -300,6 +295,12 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="referenceWorkspace">
+      <p className="automaticAnalysisStatus" role="status">{analysisStatus === 'running'
+        ? 'Analyzing your image and suggesting shape automatically…'
+        : analysisStatus === 'error' ? `Automatic analysis failed: ${analysisError}. Expand references to retry or place markers manually.`
+        : analysis ? 'Suggested shape is ready. Review it; marker corrections are optional.'
+        : !references.front ? 'Upload a front image to analyze its shape automatically. Expand references to choose an image.'
+        : 'Review the image assessment in references. An uncertain or unsupported type needs your input.'}</p>
       <section className={collapsed ? 'referenceManager collapsed' : 'referenceManager'} aria-label="Character reference images">
         <div className="referenceManagerHeading">
           <div>
@@ -370,10 +371,14 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
                 <strong>Assess character</strong>
                 <p>Assess image quality, isolate the subject, infer orientation and body plan, observe features, then decide whether a supported model-specific analysis should run.</p>
               </div>
-              <button type="button" onClick={analyzeFrontReference} disabled={analysisStatus === 'running'}>
+              <button type="button" onClick={() => analyzeFrontReference()} disabled={analysisStatus === 'running'}>
                 {analysisStatus === 'running' ? 'Assessing…' : genericAnalysis ? 'Assess again' : 'Assess image'}
               </button>
 
+              {genericAnalysis && !analysis && analysisStatus !== 'running' ? <div className="analysisSummary">
+                <p>We could not confidently select a supported type. If this is a front-facing humanoid, confirm that interpretation to suggest its shape automatically. No manual markers are required.</p>
+                <button type="button" onClick={() => analyzeFrontReference(true)}>This is a humanoid — suggest its shape</button>
+              </div> : null}
               {genericAnalysis ? (
                 <div className={`analysisSummary ${genericAnalysis.decision.outcome}`} role="status">
                   <strong>{bodyPlanLabels[classifiedPlan]}</strong>

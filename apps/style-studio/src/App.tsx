@@ -236,7 +236,8 @@ function ModelPreview({ modelUrl }: { modelUrl: string | null }) {
 }
 
 function App() {
-  const [selectedImage, setSelectedImage] = useState(referenceImages[0])
+  const [selectedImage, setSelectedImage] = useState({ label: 'Front reference', src: '' })
+  const [hasFrontReference, setHasFrontReference] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [landmarks, setLandmarks] = useState<Landmarks>({})
   const [imageSize, setImageSize] = useState({ width: 960, height: 540 })
@@ -268,7 +269,13 @@ function App() {
   }, [landmarks, imageSize, selectedImage.src])
 
   function confirmMarkers() {
-    if (!markerReview.valid) return
+    let referenceSet
+    try { referenceSet = JSON.parse(localStorage.getItem('low-poly-character-studio.reference-set.v1') ?? '{}') } catch { /* Report the missing input below. */ }
+    if (!hasFrontReference || !referenceSet?.references?.front) {
+      setMarkerError('Upload a front image or load the example in Expand references before continuing. The canvas preview alone is not a selected reference.')
+      return
+    }
+    if (!markerReview.valid) { setMarkerError(markerReview.error); return }
     try {
       const styleDna = buildHumanoidStyleDna({ source: selectedImage.src, imageSize, landmarks })
       localStorage.setItem(MARKER_REVIEW_KEY, JSON.stringify({ schemaVersion: 'marker-review/v1', confirmedAt: new Date().toISOString(), styleDna }))
@@ -350,6 +357,33 @@ function App() {
   }
 
   useEffect(() => {
+    const selectFront = (event: Event) => {
+      const front = (event as CustomEvent<{ url: string; width: number; height: number } | null>).detail
+      setHasFrontReference(Boolean(front))
+      setLandmarks({})
+      setCurrentIndex(0)
+      if (!front) setSelectedImage({ label: 'Front reference', src: '' })
+      if (front) {
+        setSelectedImage({ label: 'Uploaded front', src: front.url })
+        setImageSize({ width: front.width, height: front.height })
+      }
+    }
+    const applyLandmarks = (event: Event) => {
+      const analysis = (event as CustomEvent<{ landmarks: Landmarks; imageSize: { width: number; height: number } }>).detail
+      setLandmarks(analysis.landmarks)
+      setImageSize(analysis.imageSize)
+      setCurrentIndex(0)
+      requestAnimationFrame(() => fitImageToCanvas(analysis.imageSize))
+    }
+    window.addEventListener('low-poly:front-reference-selected', selectFront)
+    window.addEventListener('low-poly:apply-landmarks', applyLandmarks)
+    return () => {
+      window.removeEventListener('low-poly:front-reference-selected', selectFront)
+      window.removeEventListener('low-poly:apply-landmarks', applyLandmarks)
+    }
+  }, [])
+
+  useEffect(() => {
     const handlePanelToggle = () => requestAnimationFrame(() => fitImageToCanvas())
     window.addEventListener('low-poly:reference-panel-toggle', handlePanelToggle)
     return () => window.removeEventListener('low-poly:reference-panel-toggle', handlePanelToggle)
@@ -376,6 +410,7 @@ function App() {
   }, [])
 
   function onCanvasClick(event: React.MouseEvent<HTMLDivElement>) {
+    if (!hasFrontReference) return
     if (suppressClick.current) {
       suppressClick.current = false
       return
@@ -501,10 +536,10 @@ function App() {
 
         <section className="workspace">
           <section className="markerReview" aria-label="Marker completion">
-            <p role="status">Required markers: {markerReview.placed} of {markerReview.total} placed. {markerReview.valid ? 'Review their positions, then confirm.' : markerReview.error}</p>
+            <p role="status">{!hasFrontReference ? 'Choose a front reference in Expand references before continuing. ' : ''}Required markers: {markerReview.placed} of {markerReview.total} placed. {markerReview.valid ? 'Review their positions, then confirm.' : markerReview.error}</p>
             <div>
               <button type="button" onClick={() => { setShowLabels(true); fitImageToCanvas() }}>Review all markers</button>
-              <button type="button" disabled={!markerReview.valid} onClick={confirmMarkers}>Confirm markers and continue</button>
+              <button type="button" disabled={!hasFrontReference || !markerReview.valid} onClick={confirmMarkers}>Confirm markers and continue</button>
             </div>
             {markerError ? <p role="alert">{markerError}</p> : null}
           </section>
@@ -534,8 +569,9 @@ function App() {
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
             >
+              {!hasFrontReference ? <div className="referenceEmptyState"><strong>Upload your character image</strong><p>Choose a front image in the reference panel. We will analyze its shape automatically; marker editing is optional.</p><button type="button" onClick={() => window.dispatchEvent(new Event('low-poly:open-references'))}>Upload image</button></div> : null}
               <div className="imageLayer" style={{ width: imageSize.width, height: imageSize.height, transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}>
-                <img
+                {hasFrontReference ? <img
                   src={selectedImage.src}
                   draggable={false}
                   onLoad={(event) => {
@@ -543,7 +579,7 @@ function App() {
                     setImageSize(next)
                     requestAnimationFrame(() => fitImageToCanvas(next))
                   }}
-                />
+                /> : null}
                 {Object.entries(landmarks).map(([rawKey, point]) => {
                   const key = rawKey as LandmarkKey
                   const selected = key === currentLandmark
