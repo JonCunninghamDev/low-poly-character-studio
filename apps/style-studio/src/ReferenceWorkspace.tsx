@@ -6,12 +6,16 @@ import {
   type CharacterImageAssessment,
 } from './character-image-assessment'
 import { humanoidChibiAnalysisAdapter, type HumanoidReferenceAnalysis } from './reference-analysis'
+import { createReferenceIntent, isCurrentReferenceIntent, MAX_REFERENCE_DESCRIPTION_LENGTH, type ReferenceIntent } from './reference-intent'
+import { MARKER_REVIEW_KEY } from './marker-review'
+import { CONFIRMATION_STORAGE_KEY } from './vertical-slice-readiness'
 import './reference-workspace.css'
 
 type ReferenceSlotId = 'front' | 'side' | 'back'
 type ReferenceSource = 'upload' | 'example'
 
 type ReferenceAsset = {
+  id: string
   slot: ReferenceSlotId
   label: string
   required: boolean
@@ -28,11 +32,16 @@ type ReferenceSetInput = {
   schemaVersion: 'reference-set/v1'
   modelTypeId: 'humanoid/chibi-v1'
   description?: string
+  userIntent: ReferenceIntent | null
   updatedAt: string
   references: Partial<Record<ReferenceSlotId, Omit<ReferenceAsset, 'url'>>>
 }
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024
+// LAN development URLs can be HTTP, where randomUUID is unavailable.
+const newReferenceId = () => typeof crypto.randomUUID === 'function'
+  ? crypto.randomUUID()
+  : `reference-${Date.now()}-${crypto.getRandomValues(new Uint32Array(2)).join('-')}`
 const SUPPORTED_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp'])
 const slots: Array<{ id: ReferenceSlotId; label: string; required: boolean }> = [
   { id: 'front', label: 'Front', required: true },
@@ -66,25 +75,16 @@ function readDimensions(url: string) {
   })
 }
 
-function storedDescription() {
-  try {
-    const stored = localStorage.getItem('low-poly-character-studio.reference-set.v1')
-    if (!stored) return ''
-    const parsed = JSON.parse(stored) as { description?: unknown }
-    return typeof parsed.description === 'string' ? parsed.description : ''
-  } catch {
-    return ''
-  }
-}
-
 function toInput(
   references: Partial<Record<ReferenceSlotId, ReferenceAsset>>,
-  description: string,
+  intent: ReferenceIntent | null,
 ): ReferenceSetInput {
+  const userIntent = isCurrentReferenceIntent(intent, references.front?.id) ? intent : null
   return {
     schemaVersion: 'reference-set/v1',
     modelTypeId: 'humanoid/chibi-v1',
-    description: description.trim() || undefined,
+    description: userIntent?.description,
+    userIntent,
     updatedAt: new Date().toISOString(),
     references: Object.fromEntries(
       Object.entries(references).map(([slot, asset]) => {
@@ -117,7 +117,9 @@ async function applyAnalysisToLandmarkEditor(analysis: HumanoidReferenceAnalysis
 
 function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
   const [references, setReferences] = useState<Partial<Record<ReferenceSlotId, ReferenceAsset>>>({})
-  const [description, setDescription] = useState(storedDescription)
+  const [description, setDescription] = useState('')
+  const [intent, setIntent] = useState<ReferenceIntent | null>(null)
+  const descriptionRef = useRef<HTMLTextAreaElement | null>(null)
   const [errors, setErrors] = useState<Partial<Record<ReferenceSlotId, string>>>({})
   const [genericAnalysis, setGenericAnalysis] = useState<CharacterImageAssessment | null>(null)
   const [analysis, setAnalysis] = useState<HumanoidReferenceAnalysis | null>(null)
@@ -125,7 +127,7 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
   const [analysisError, setAnalysisError] = useState<string | null>(null)
   const [collapsed, setCollapsed] = useState(false)
   const inputRefs = useRef<Partial<Record<ReferenceSlotId, HTMLInputElement | null>>>({})
-  const referenceInput = useMemo(() => toInput(references, description), [references, description])
+  const referenceInput = useMemo(() => toInput(references, intent), [references, intent])
   const referenceCount = Object.keys(references).length
 
   useEffect(() => {
@@ -140,9 +142,10 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const front = references.front
     window.dispatchEvent(new CustomEvent('low-poly:front-reference-selected', { detail: front ?? null }))
-    if (front) void analyzeFrontReference()
-    // Analyze each new front image once. Description edits use the explicit retry.
-  }, [references.front?.url])
+    resetAnalysis()
+    if (front) descriptionRef.current?.focus()
+    // A new image requires an explicit describe-or-skip decision before analysis.
+  }, [references.front?.id])
 
   useEffect(() => () => {
     analysisRun.current += 1
@@ -166,6 +169,8 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
     setAnalysisError(null)
     localStorage.removeItem('low-poly-character-studio.character-image-assessment.v1')
     localStorage.removeItem('low-poly-character-studio.reference-analysis.v1')
+    localStorage.removeItem(MARKER_REVIEW_KEY)
+    localStorage.removeItem(CONFIRMATION_STORAGE_KEY)
   }
 
   function toggleCollapsed() {
@@ -193,6 +198,7 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
         return {
           ...current,
           [slot]: {
+            id: newReferenceId(),
             slot,
             label: slots.find((candidate) => candidate.id === slot)!.label,
             required: slot === 'front',
@@ -206,7 +212,12 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
         }
       })
       setErrors((current) => ({ ...current, [slot]: undefined }))
-      if (slot === 'front') resetAnalysis()
+      if (slot === 'front') {
+        setIntent(null)
+        setDescription('')
+        setCollapsed(false)
+        resetAnalysis()
+      }
     } catch (error) {
       URL.revokeObjectURL(url)
       setErrors((current) => ({ ...current, [slot]: error instanceof Error ? error.message : 'Invalid image.' }))
@@ -217,6 +228,7 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
     const loaded = await Promise.all(slots.map(async (slot) => {
       const dimensions = await readDimensions(examples[slot.id])
       return [slot.id, {
+        id: newReferenceId(),
         slot: slot.id,
         label: slot.label,
         required: slot.required,
@@ -230,19 +242,30 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
     }))
     setReferences(Object.fromEntries(loaded))
     setDescription('A compact humanoid character. It stands upright and moves on two legs.')
+    setIntent(null)
     setErrors({})
     resetAnalysis()
   }
 
-  async function analyzeFrontReference(useHumanoid = false) {
+  function submitIntent(decision: ReferenceIntent['decision']) {
     const front = references.front
     if (!front) return
+    const submitted = createReferenceIntent(front.id, decision, description)
+    setIntent(submitted)
+    if (decision === 'skipped') setDescription('')
+    void analyzeFrontReference(false, submitted)
+  }
+
+  async function analyzeFrontReference(useHumanoid = false, submitted = intent) {
+    const front = references.front
+    if (!front || !isCurrentReferenceIntent(submitted, front.id)) return
+    resetAnalysis()
     const run = ++analysisRun.current
     setAnalysisStatus('running')
     setAnalysisError(null)
 
     try {
-      const generic = await analyzeCharacterImageUrl(front.url, { description })
+      const generic = { ...await analyzeCharacterImageUrl(front.url, { description: submitted.description }), userIntent: submitted }
       if (run !== analysisRun.current) return
       setGenericAnalysis(generic)
       const persistedGeneric = persistableCharacterImageAssessment(generic)
@@ -284,7 +307,11 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
       delete next[slot]
       return next
     })
-    if (slot === 'front') resetAnalysis()
+    if (slot === 'front') {
+      setIntent(null)
+      setDescription('')
+      resetAnalysis()
+    }
     if (inputRefs.current[slot]) inputRefs.current[slot]!.value = ''
   }
 
@@ -300,6 +327,7 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
         : analysisStatus === 'error' ? `Automatic analysis failed: ${analysisError}. Expand references to retry or place markers manually.`
         : analysis ? 'Suggested shape is ready. Review it; marker corrections are optional.'
         : !references.front ? 'Upload a front image to analyze its shape automatically. Expand references to choose an image.'
+        : !intent ? 'Describe your image, or choose Analyze without description to continue.'
         : 'Review the image assessment in references. An uncertain or unsupported type needs your input.'}</p>
       <section className={collapsed ? 'referenceManager collapsed' : 'referenceManager'} aria-label="Character reference images">
         <div className="referenceManagerHeading">
@@ -318,6 +346,35 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="referenceManagerBody">
+          {references.front ? <section className="referenceIntent" aria-label="Describe your reference">
+            <label className="referenceDescription" htmlFor="reference-description">
+              <strong>Describe the character</strong>
+              <span>What are we looking at, and how should it move or work?</span>
+              <textarea
+                id="reference-description"
+                ref={descriptionRef}
+                rows={3}
+                maxLength={MAX_REFERENCE_DESCRIPTION_LENGTH}
+                value={description}
+                onChange={(event) => {
+                  setDescription(event.currentTarget.value)
+                  setIntent(null)
+                  resetAnalysis()
+                }}
+                placeholder="Example: A smiling blob with no arms or legs. It moves by bouncing."
+              />
+              <small>Your description is guidance from you. Image evidence can disagree with it.</small>
+            </label>
+            <div className="referenceIntentActions">
+              <button type="button" onClick={() => submitIntent('described')} disabled={!description.trim() || analysisStatus === 'running'}>
+                {analysisStatus === 'running' ? 'Analyzing…' : 'Analyze image'}
+              </button>
+              <button type="button" onClick={() => submitIntent('skipped')} disabled={analysisStatus === 'running'}>Analyze without description</button>
+            </div>
+            {intent ? <p className="referenceIntentDecision" role="status">{intent.decision === 'skipped'
+              ? 'Using image evidence only. Description was explicitly skipped.'
+              : 'Your description is included as user-provided guidance.'}</p> : null}
+          </section> : null}
           <div className="referenceSlots">
             {slots.map((slot) => {
               const asset = references[slot.id]
@@ -350,20 +407,7 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
             })}
           </div>
 
-          <label className="referenceDescription">
-            <strong>Describe the character</strong>
-            <span>What are we looking at, and anything important we should know about how it should move or work?</span>
-            <textarea
-              rows={3}
-              value={description}
-              onChange={(event) => {
-                setDescription(event.currentTarget.value)
-                resetAnalysis()
-              }}
-              placeholder="Example: A smiling blob with no arms or legs. It moves by bouncing and faces toward its eyes."
-            />
-            <small>Your description gives the analyzer direction. It is stored as a user-provided prior, not treated as visual ground truth.</small>
-          </label>
+
 
           {!references.front ? <p className="referenceRequirement" role="status">Add a front reference before analysis.</p> : (
             <section className="referenceAnalysis" aria-label="Automated reference analysis">
@@ -371,9 +415,7 @@ function ReferenceWorkspace({ children }: { children: React.ReactNode }) {
                 <strong>Assess character</strong>
                 <p>Assess image quality, isolate the subject, infer orientation and body plan, observe features, then decide whether a supported model-specific analysis should run.</p>
               </div>
-              <button type="button" onClick={() => analyzeFrontReference()} disabled={analysisStatus === 'running'}>
-                {analysisStatus === 'running' ? 'Assessing…' : genericAnalysis ? 'Assess again' : 'Assess image'}
-              </button>
+              {!intent ? <p className="referenceRequirement">Describe the image above, or explicitly skip the description before analysis.</p> : null}
 
               {genericAnalysis && !analysis && analysisStatus !== 'running' ? <div className="analysisSummary">
                 <p>We could not confidently select a supported type. If this is a front-facing humanoid, confirm that interpretation to suggest its shape automatically. No manual markers are required.</p>

@@ -1,3 +1,5 @@
+import type { ReferenceIntent } from './reference-intent'
+
 export type RasterImage = {
   width: number
   height: number
@@ -91,6 +93,7 @@ export type CharacterFunctionalAssessment = {
 export type CharacterImageAssessment = {
   schemaVersion: 'character-image-assessment/v1'
   adapterId: 'generic-local-silhouette-v2'
+  userIntent?: ReferenceIntent
   input: CharacterInputAssessment
   subject: CharacterSubjectAssessment
   features: CharacterFeatureAssessment

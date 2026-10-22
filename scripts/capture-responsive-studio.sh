@@ -39,6 +39,13 @@ for _ in $(seq 1 40); do
 done
 curl --fail --silent "$LANDING_URL" >/dev/null
 
+# Exercise actual uploads/description decisions and retain their browser proof
+# alongside the static responsive captures in the existing CI artifact.
+PLAYWRIGHT_CHROMIUM_EXECUTABLE="$CHROME" \
+  STUDIO_URL="$LANDING_URL" \
+  STUDIO_E2E_EVIDENCE_DIR="$OUTPUT_DIR/upload-workflow" \
+  pnpm studio:e2e:test
+
 capture() {
   local name="$1"
   local width="$2"

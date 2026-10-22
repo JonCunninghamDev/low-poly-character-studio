@@ -7,6 +7,7 @@ import { ReferenceWorkspace } from './ReferenceWorkspace'
 import { VerticalSliceBuildWorkflow, type GuidedBuildStep } from './VerticalSliceBuildWorkflow'
 import { VerticalSliceReadinessPanel } from './VerticalSliceReadiness'
 import { MARKER_REVIEW_KEY } from './marker-review'
+import { isCurrentReferenceIntent } from './reference-intent'
 import './responsive-studio.css'
 import './responsive-studio-mobile.css'
 import './vertical-slice-readiness.css'
@@ -29,7 +30,11 @@ const WORKFLOW_STEPS = [
 
 type WorkflowStep = typeof WORKFLOW_STEPS[number]
 type StepState = 'completed' | 'current' | 'available' | 'warning' | 'future'
-type ReferenceSetSnapshot = { references?: { front?: unknown } }
+type ReferenceSetSnapshot = { references?: { front?: { id?: string } }; userIntent?: unknown }
+
+function referenceReady(snapshot: ReferenceSetSnapshot | null) {
+  return Boolean(snapshot?.references?.front) && isCurrentReferenceIntent(snapshot?.userIntent, snapshot?.references?.front?.id)
+}
 type DirectPanPointerEvent = PointerEvent & { __lowPolyDirectPanProxy?: boolean }
 
 function initialModelType(): ModelTypeManifest | null {
@@ -42,7 +47,7 @@ function hasFrontReference() {
   try {
     const stored = localStorage.getItem(REFERENCE_SET_STORAGE_KEY)
     if (!stored) return false
-    return Boolean((JSON.parse(stored) as ReferenceSetSnapshot).references?.front)
+    return referenceReady(JSON.parse(stored) as ReferenceSetSnapshot)
   } catch { return false }
 }
 
@@ -103,7 +108,7 @@ function StudioShell() {
   useEffect(() => {
     const onReferenceSetChange = (event: Event) => {
       const detail = (event as CustomEvent<ReferenceSetSnapshot>).detail
-      const nextFrontReady = Boolean(detail?.references?.front)
+      const nextFrontReady = referenceReady(detail)
       setFrontReady(nextFrontReady)
       if (!nextFrontReady) setAnalysisReady(false)
     }
