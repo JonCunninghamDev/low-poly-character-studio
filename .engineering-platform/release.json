@@ -1,0 +1,17 @@
+{
+  "repository": "JonCunninghamDev/engineering-platform",
+  "version": "v1.0.0",
+  "commit": "b107c9306161b395cbcaffebb55e47850b999560",
+  "verified_release_url": "https://github.com/JonCunninghamDev/engineering-platform/releases/tag/v1.0.0",
+  "files": {
+    "agent/operating-contract-v1.md": "7bd76a3fbf0c4163d70d88417a9b67d5202cfee1f84c863537f702661511d0b3",
+    "schemas/engineering-policy-v1.schema.json": "7327d8c196572834a8ca7ffdfaac144ec9fb9627b89f73ec263b89998d31c209",
+    "schemas/repository-profile-v1.schema.json": "e46c478299cbacd59a5b6f0f6d498994dd6c70bc77647165c2ea13a0903a7945",
+    "scripts/validate_engineering_policy.py": "5c645c7622e2cb41fbfda28deb828e2e73cb2d7813d5fb6bd9012a96e196ff12",
+    "profiles/node-python-blender.json": "7fc820791492dc7b8228ce11f7d73c6a40c8266d05db7960080804adca2d7a84",
+    "profiles/node-python.json": "43f7d8aa0c86764e21308445621e3e395621f8e8af2744e82fcf8415afd668ee",
+    "profiles/capabilities/node.json": "8f5bafc2ec102482eb2b96fbee9c63ad9f1a5da63435b81871ba26cbbab155fd",
+    "profiles/capabilities/python.json": "ae90b1be907615dc098b69e896a27fee34bd0a0bae7572cb664c18588cf8829d",
+    "profiles/capabilities/blender.json": "bfaa9ab9f71fe81f3b048953c84a9d252d31cfcdb887da9f97528f6cd7e6707f"
+  }
+}
