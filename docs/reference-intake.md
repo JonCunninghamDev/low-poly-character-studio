@@ -1,63 +1,25 @@
-# Reference description and image-only intake
+# Minimal image-to-3D workspace
 
-After uploading a front reference, the Studio waits for one explicit choice:
+The default route is a minimal converter inspired by the product owner's Sprite Sheet Maker example. It replaces the landing/guest/step-navigation entry with three immediately accessible views: **Uploaded image**, **3D model**, and **Animations**. The prior guided workflow is preserved at `?advanced=1&guest=1&modelType=humanoid%2Fchibi-v1`, reachable through **Advanced editor** in a separate tab.
 
-- Describe the subject and press **Analyze image**.
-- Press **Analyze without description** to assess only the image.
+Upload or drop a PNG/JPG/WebP (up to 15 MB), inspect the preview, then choose **Convert to 3D**. A description is optional behind **Add a description**. Conversion first uses the existing generic image assessment and humanoid landmark inference. Unknown morphology asks a simple humanoid confirmation; known unsupported morphology stops explicitly. No manual markers are required in the minimal path. The current generator remains the existing stylized humanoid pipeline.
 
-The existing description field remains lightweight. It accepts up to 2,000
-characters and is guidance from the user, rather than visual ground truth. A
-contradictory description does not confirm a model type or invent missing anatomy.
-The image-assessment engine still accepts image-only requests without a description.
-An uncertain image can still require an explicit humanoid interpretation before
-shape suggestions; other morphologies are not silently sent to a humanoid generator.
+The converter creates a real API build job, runs its persisted model/rig/animation/validation/export pipeline, and polls actual stage state for plain-language progress. Uploaded image navigation remains available while it runs. Validated results load their real GLB in an orbitable preview; animation controls come from clips loaded in that file. Play/pause controls the animation mixer. A failed validation never offers a download. This does not add tree generation, new animation packs, arbitrary image reconstruction or public hosting.
 
-## Persistence and invalidation
+## Input and request lifecycle
 
-Each upload has a new reference ID, including replacement with the same filename.
-The persisted `reference-set/v1` input carries a separate `reference-intent/v1`
-record containing that ID, a `user-provided` origin, decision (`described` or
-`skipped`) and decision timestamp. A described decision stores the trimmed text;
-a skipped decision stores no description, including any draft text that was
-present when skip was clicked. The generic assessment retains a copy of the exact
-input decision separately from measured/inferred evidence. The reference set is
-included in the generated build-job request, preserving its provenance.
+Every upload has a fresh identity. User conversion records either the trimmed optional description or an image-only decision in `reference-intent/v1`, separate from machine evidence. The existing reference, analysis and style inputs are carried into the real job request. An uncertain humanoid selection is explicit provenance.
 
-While awaiting a decision, `userIntent` is null. Changing the description or front
-image clears the previous assessment, marker review and model-type confirmation.
-The user must make a new decision and review the new result. Late asynchronous
-results are discarded through the existing analysis-run identity. Adding an
-optional side/back view preserves the front decision and its live preview URL.
-A new session begins without an uploaded image or a stale description/decision;
-source images are not restored from metadata alone.
+Replacing an image, editing guidance or starting another run clears prior output and clips, aborts pending browser requests, and invalidates late results. This does not cancel a job already running on the server. Failed replacement uploads report errors; browser object URLs and Three.js resources are released. There is no restored sample image or stale local-storage result in the default workspace.
 
-The Studio navigation, marker confirmation and final generation submission check
-that the decision matches the current front ID. These are product-flow guards,
-not an authentication or hostile-client security boundary. Existing API clients
-and the underlying image-only analyzer do not acquire a mandatory text requirement.
-No Blender modeling, rig, animation or final GLB contracts change in this feature.
+The advanced editor retains its stricter describe-or-explicit-skip and marker-review flow from the earlier PR increment. The new minimal default supersedes that earlier mandatory description prompt for ordinary users. API clients and the underlying image-only engine retain their existing optional-description behavior.
 
-## Validation and delivery
+## Verification
 
-`pnpm marker-review:test` includes serialization, stale-image, malformed-provenance,
-empty/oversized-description and skip-with-draft regression tests. The real browser
-workflow runs with `pnpm studio:e2e:test` against a running Studio, optionally using
-`STUDIO_URL` and `PLAYWRIGHT_CHROMIUM_EXECUTABLE`. It covers 1366×610 and 390×700,
-including described/skip paths, editing confirmed data, removing/replacing the
-same file, optional references and the actual generation request payload.
+- `pnpm studio:build`, `pnpm final-workflow:test`, `pnpm reference-analysis:test`, and the adopted governance checks remain required alongside complete CI and real Blender fixture smoke.
+- `node tests/browser/minimal-workspace.mjs` exercises the default workspace at 1366×610, 390×700 and 320×640. It covers upload/preview, original-image access during conversion, inferred build input, validated download, GLB loading, actual clip selection/play-pause and validation failure. It also checks horizontal overflow and empty states.
+- This UI test mocks job transport and loads a real GLB fixture derived from the checked-in head asset with two synthetic clips. Its head preview is **test data**, not an image-generated character or Blender fidelity proof. Production code uses the real API. Independent real Blender CI remains the generator evidence.
+- `pnpm studio:e2e:test` retains the advanced-editor upload/provenance regression test through the explicit advanced route.
+- The existing CI capture script runs both browser suites on the built preview and retains screenshots/result manifests in its responsive artifact (`minimal-studio/` and `upload-workflow/`). Standalone browser runs accept `STUDIO_URL`, `PLAYWRIGHT_CHROMIUM_EXECUTABLE` and their respective evidence-directory variables.
 
-The browser test uses real upload, image analysis and marker review. It intercepts
-the final job POST to stop before Blender; it is not evidence that a new uploaded
-character was generated or that arbitrary image-to-3D works. The independent
-existing Blender fixture smoke remains required CI evidence for the generator.
-
-`scripts/capture-responsive-studio.sh` runs this browser test on the built preview
-and retains pending/review screenshots plus `results.json` under `upload-workflow/`
-in the existing responsive CI artifact. It requires no live API or Blender process.
-For local use the default browser output is `image-analysis/output/upload-workflow`.
-
-This feature progresses Studio #86 under the adopted released Engineering Platform
-v1.0.0 steering/policy, while preserving local product rules. It does not complete
-all generic assessment criteria in #86, prove the unreleased managed execution
-host, promote a platform release or deploy production. Roll back through a focused
-revert of the feature PR; no application-data migration is required.
+This continues PR #95/#86 following the latest product-owner feedback and advances the workspace direction in #85. It uses the adopted released platform steering; it does not claim a managed execution-host run or publish a platform release. Rollback is a focused revert of the feature PR, without a data migration. Product-owner visual acceptance remains a milestone checkpoint.

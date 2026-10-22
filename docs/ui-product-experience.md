@@ -1,5 +1,21 @@
 # Product UI Experience
 
+## Current approved direction: minimal converter
+
+The product owner's latest supplied screenshots and direction supersede the default wizard/landing/sign-in path described later in this document. The default route opens a minimal workspace immediately, with a quiet header and **Uploaded image / 3D model / Animations** navigation. Use a restrained dark palette, one accent, generous space and one primary action. The uploaded image and generated asset dominate their respective views.
+
+- Start with a single upload/drop area. Show the original image after selection, a replace action and **Convert to 3D**. Description is optional and disclosed on demand.
+- Show real analysis/conversion progress in the model view. Users can return to the original image while the job runs. Do not simulate completion or fabricate models.
+- If the supported humanoid interpretation is uncertain, ask one plain-language confirmation. Explicitly reject unsupported morphology; do not silently force a humanoid.
+- Display the validated generated GLB with rotation/zoom. Animation controls list clips actually loaded from that GLB and support selection and play/pause. Only validated output gets a download link.
+- Errors, replaced inputs and retries must remove stale output/downloads. Late requests cannot replace newer input/results. Aborting the browser request does not claim to cancel an already submitted server job.
+- Keep marker placement, workflow steps, readiness panels and technical diagnostics in the existing optional **Advanced editor**, opened separately so the minimal session is preserved.
+- Use normal vertical workspace scrolling, including short laptop screens. Every control must be reachable at 320px and 390px widths. Tab navigation supports keyboard and visible focus; respect reduced-motion preferences.
+
+`docs/reference-intake.md` describes implementation, test fixtures and limitations. The sections below document the prior guided experience retained as advanced-editor reference; they are not requirements to restore that complexity to the default workspace.
+
+## Previous guided experience (advanced-editor reference)
+
 ## Purpose
 
 Low Poly Character Studio should feel like a polished creative product rather than an internal pipeline console. A first-time visitor should understand what the service creates, why it is useful, how to begin, where they are in the process, and what to do next without learning repository terminology.
