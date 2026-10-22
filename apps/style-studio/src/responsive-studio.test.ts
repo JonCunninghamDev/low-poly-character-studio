@@ -40,10 +40,9 @@ test('reference and final-build surfaces do not consume permanent viewport layou
   assert.match(css, /overscroll-behavior: contain/)
 })
 
-test('reference drawer starts collapsed and supports a reproducible expanded review URL', async () => {
+test('reference drawer starts open so a new session can upload its first image', async () => {
   const source = await readFile(referenceWorkspaceUrl, 'utf8')
-  assert.match(source, /get\('references'\) !== 'open'/)
-  assert.match(source, /useState\(referenceDrawerInitiallyCollapsed\)/)
+  assert.match(source, /const \[collapsed, setCollapsed\] = useState\(false\)/)
   assert.match(source, /collapsed \? 'referenceManager collapsed' : 'referenceManager'/)
 })
 

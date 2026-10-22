@@ -108,13 +108,21 @@ function StudioShell() {
       if (!nextFrontReady) setAnalysisReady(false)
     }
     const onAnalysisComplete = () => setAnalysisReady(true)
+    const onAnalysisInvalidated = () => { setAnalysisReady(false); setMarkersConfirmed(false); setBuildReady(false) }
+    window.addEventListener('low-poly:analysis-invalidated', onAnalysisInvalidated)
     const onMarkersChanged = () => { setMarkersConfirmed(false); setBuildReady(false) }
-    const onMarkersConfirmed = () => setMarkersConfirmed(Boolean(localStorage.getItem(MARKER_REVIEW_KEY)))
+    const onMarkersConfirmed = () => {
+      setFrontReady(hasFrontReference())
+      setAnalysisReady(hasReferenceAnalysis())
+      setMarkersConfirmed(Boolean(localStorage.getItem(MARKER_REVIEW_KEY)))
+    }
     window.addEventListener('low-poly:markers-changed', onMarkersChanged)
     window.addEventListener('low-poly:markers-confirmed', onMarkersConfirmed)
     window.addEventListener('low-poly:reference-set-change', onReferenceSetChange)
     window.addEventListener('low-poly:reference-analysis-complete', onAnalysisComplete)
+    setFrontReady(hasFrontReference())
     return () => {
+      window.removeEventListener('low-poly:analysis-invalidated', onAnalysisInvalidated)
       window.removeEventListener('low-poly:markers-changed', onMarkersChanged)
       window.removeEventListener('low-poly:markers-confirmed', onMarkersConfirmed)
       window.removeEventListener('low-poly:reference-set-change', onReferenceSetChange)

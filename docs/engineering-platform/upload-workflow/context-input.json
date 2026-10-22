@@ -1,0 +1,36 @@
+{
+  "schema_version": "context-input/v1",
+  "goal": "Make the Studio upload-first, infer shape automatically, and ensure confirmation advances reliably.",
+  "context": [
+    {
+      "key": "product",
+      "value": "Existing React/Vite Studio, Express jobs API, Python/Blender compiler. Preserve humanoid/chibi-v1 gold standard.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high"
+    },
+    {
+      "key": "request",
+      "value": "User reports confirmation does nothing, asks to avoid manual markers, and explicitly requires an uploaded image instead of a default image.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high"
+    },
+    {
+      "key": "scope",
+      "value": "Fix the merged Studio on develop; preserve explicit examples and manual correction. Automatically assess new front uploads. Ask for type confirmation when uncertain, then infer landmarks without manual placement.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high"
+    },
+    {
+      "key": "validation",
+      "value": "Build, Node contract suites and real Chromium workflow at laptop/mobile widths. Browser test includes stale reference metadata, automatic inference after type confirmation, optional reference preservation and persisted generation request. Stops before Blender.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high"
+    },
+    {
+      "key": "constraints",
+      "value": "Do not claim general vision, tree generation, additional animations or deployment. GitHub API and pinned Blender download remain external limitations. Existing repository steering remains authoritative.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high"
+    }
+  ]
+}
