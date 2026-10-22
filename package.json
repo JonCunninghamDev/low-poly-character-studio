@@ -20,7 +20,7 @@
     "animation-catalog:test": "pnpm --filter @low-poly-character-studio/api exec tsx --test ../../apps/style-studio/src/AnimationClipCatalog.test.ts",
     "vertical-slice:test": "pnpm --filter @low-poly-character-studio/api exec tsx --test ../../apps/style-studio/src/vertical-slice-readiness.test.ts ../../apps/style-studio/src/vertical-slice-build-workflow.test.ts",
     "pipeline-runner:test": "pnpm --filter @low-poly-character-studio/api test:pipeline-runner",
-    "final-workflow:test": "pnpm --filter @low-poly-character-studio/api exec tsx --test ../../apps/style-studio/src/final-build-workflow.test.ts && pnpm vertical-slice:test && pnpm pipeline-runner:test && pnpm studio-responsive:test",
+    "final-workflow:test": "pnpm --filter @low-poly-character-studio/api exec tsx --test ../../apps/style-studio/src/final-build-workflow.test.ts && pnpm vertical-slice:test && pnpm pipeline-runner:test && pnpm studio-responsive:test && pnpm marker-review:test",
     "model-runner:test": "pnpm --filter @low-poly-character-studio/api test:model-runner",
     "rig-runner:test": "pnpm --filter @low-poly-character-studio/api test:rig-runner",
     "animation-runner:test": "pnpm --filter @low-poly-character-studio/api test:animation-runner && pnpm --filter @low-poly-character-studio/api test:final-artifact",
@@ -30,6 +30,7 @@
     "rig-review": "bash scripts/render-rig-review.sh",
     "style-dna:test": "python3 packages/asset-compiler/blender/tests/test_style_dna.py",
     "dev": "bash scripts/dev.sh",
-    "api": "pnpm --filter @low-poly-character-studio/api dev"
+    "api": "pnpm --filter @low-poly-character-studio/api dev",
+    "marker-review:test": "pnpm --filter @low-poly-character-studio/api exec tsx --test ../../apps/style-studio/src/marker-review.test.ts"
   }
 }

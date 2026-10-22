@@ -221,3 +221,21 @@
     transition: none;
   }
 }
+
+/* Reference controls participate in layout instead of covering marker tools. */
+.studioApplicationShell .referenceManager.collapsed {
+  position: relative;
+  inset: auto;
+  width: auto;
+  flex: 0 0 auto;
+  margin: 8px;
+  box-shadow: none;
+}
+.studioApplicationShell .guidedMainWorkspace { overflow-y: auto; }
+.studioApplicationShell .workspace { overflow-y: auto; }
+.markerReview { flex: 0 0 auto; padding: 8px; border: 1px solid #46506c; border-radius: 8px; margin-bottom: 8px; }
+.markerReview p { font-size: 13px; overflow-wrap: anywhere; }
+.markerReview > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.markerReview button { padding: 8px 10px; background: #24293a; color: #fff; border: 1px solid #7180aa; border-radius: 7px; cursor: pointer; }
+.markerReview button:disabled { opacity: .5; cursor: not-allowed; }
+.studioApplicationShell .referenceWorkspace .sidebar { padding-top: 12px; }

@@ -1,0 +1,65 @@
+{
+  "schema_version": "agent-run-report/v1",
+  "run_id": "context-957fa424-dff9-4a67-9422-f806758321a3",
+  "agent": {
+    "role": "context",
+    "version": "1.0.0",
+    "service_tier": "basic",
+    "autonomy": "supervised",
+    "mode": "production"
+  },
+  "why_invoked": "Human/task context requires normalization and readiness assessment before orchestration.",
+  "workflow": "low-poly-character-studio",
+  "status": "complete",
+  "decisions": [
+    {
+      "decision": "context_ready",
+      "reason": "All required context is present and no required field has conflicting values."
+    }
+  ],
+  "capabilities": {
+    "used": [
+      "inspect_context_contract",
+      "normalize_supplied_context",
+      "identify_missing_context",
+      "detect_explicit_conflicts",
+      "produce_context_manifest"
+    ],
+    "available_unused": [
+      "formulate_blocking_questions"
+    ],
+    "locked_by_tier": {
+      "managed": [
+        "retrieve_approved_context",
+        "verify_source_provenance",
+        "evaluate_context_freshness",
+        "generate_role_specific_context",
+        "request_blocking_context_interactively"
+      ],
+      "full": [
+        "continuous_context_maintenance",
+        "automatic_context_enrichment",
+        "sensitivity_classification",
+        "cross_project_context_relationships",
+        "durable_verified_context_updates",
+        "stale_context_monitoring"
+      ]
+    }
+  },
+  "outputs": [
+    "context.json"
+  ],
+  "handoff": {
+    "target": "orchestrator",
+    "artifact": "context.json",
+    "allowed": true
+  },
+  "metrics": {
+    "supplied_context_items": 5,
+    "normalized_context_keys": 5,
+    "missing_required_count": 0,
+    "missing_recommended_count": 0,
+    "conflict_count": 0,
+    "human_questions_count": 0
+  }
+}

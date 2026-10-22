@@ -6,6 +6,7 @@ import { ModelTypeCatalog } from './ModelTypeCatalog'
 import { ReferenceWorkspace } from './ReferenceWorkspace'
 import { VerticalSliceBuildWorkflow, type GuidedBuildStep } from './VerticalSliceBuildWorkflow'
 import { VerticalSliceReadinessPanel } from './VerticalSliceReadiness'
+import { MARKER_REVIEW_KEY } from './marker-review'
 import './responsive-studio.css'
 import './responsive-studio-mobile.css'
 import './vertical-slice-readiness.css'
@@ -86,6 +87,7 @@ function StudioShell() {
   const [frontReady, setFrontReady] = useState(hasFrontReference)
   const [analysisReady, setAnalysisReady] = useState(hasReferenceAnalysis)
   const [buildReady, setBuildReady] = useState(false)
+  const [markersConfirmed, setMarkersConfirmed] = useState(false)
   const [buildStep, setBuildStep] = useState<GuidedBuildStep>('generate')
   const [stepsOpen, setStepsOpen] = useState(false)
   const [inspectorOpen, setInspectorOpen] = useState(false)
@@ -106,9 +108,15 @@ function StudioShell() {
       if (!nextFrontReady) setAnalysisReady(false)
     }
     const onAnalysisComplete = () => setAnalysisReady(true)
+    const onMarkersChanged = () => { setMarkersConfirmed(false); setBuildReady(false) }
+    const onMarkersConfirmed = () => setMarkersConfirmed(Boolean(localStorage.getItem(MARKER_REVIEW_KEY)))
+    window.addEventListener('low-poly:markers-changed', onMarkersChanged)
+    window.addEventListener('low-poly:markers-confirmed', onMarkersConfirmed)
     window.addEventListener('low-poly:reference-set-change', onReferenceSetChange)
     window.addEventListener('low-poly:reference-analysis-complete', onAnalysisComplete)
     return () => {
+      window.removeEventListener('low-poly:markers-changed', onMarkersChanged)
+      window.removeEventListener('low-poly:markers-confirmed', onMarkersConfirmed)
       window.removeEventListener('low-poly:reference-set-change', onReferenceSetChange)
       window.removeEventListener('low-poly:reference-analysis-complete', onAnalysisComplete)
     }
@@ -118,7 +126,7 @@ function StudioShell() {
     if (!buildReady) setBuildStep('generate')
   }, [buildReady])
 
-  const currentStepIndex = currentStepIndexFor(frontReady, analysisReady, buildReady, buildStep)
+  const currentStepIndex = currentStepIndexFor(frontReady, analysisReady && markersConfirmed, buildReady && markersConfirmed, buildStep)
   const currentStep = WORKFLOW_STEPS[currentStepIndex]
   const inspector = useMemo(() => inspectorCopy(currentStep), [currentStep])
   const isReferenceStep = currentStepIndex <= 3

@@ -1,0 +1,61 @@
+{
+  "schema_version": "agent-run-report/v1",
+  "run_id": "orchestrator-f0a8b27d-b426-429d-ab39-8d72f91bb49b",
+  "agent": {
+    "role": "orchestrator",
+    "version": "1.0.0",
+    "service_tier": "basic",
+    "autonomy": "supervised",
+    "mode": "production"
+  },
+  "why_invoked": "Ready Context Agent handoff requires an explainable minimum-sufficient execution plan.",
+  "workflow": "low-poly-character-studio",
+  "status": "complete",
+  "decisions": [
+    {
+      "decision": "execution_plan_created",
+      "reason": "Selected 1 capability step(s) with zero downstream dispatches at Basic tier."
+    }
+  ],
+  "capabilities": {
+    "used": [
+      "validate_context_handoff",
+      "inspect_capability_registry",
+      "select_minimum_capabilities",
+      "construct_dependency_graph",
+      "explain_plan_decisions",
+      "produce_execution_plan"
+    ],
+    "available_unused": [],
+    "locked_by_tier": {
+      "managed": [
+        "dispatch_agents",
+        "track_live_task_state",
+        "bounded_retry_and_replan",
+        "parallel_workstream_execution",
+        "route_human_gates"
+      ],
+      "full": [
+        "dynamic_capacity_optimization",
+        "cost_risk_aware_scheduling",
+        "continuous_replanning",
+        "self_healing_orchestration"
+      ]
+    }
+  },
+  "outputs": [
+    "execution-plan.json"
+  ],
+  "handoff": {
+    "target": "execution-runtime",
+    "artifact": "execution-plan.json",
+    "allowed": true,
+    "execution_status": "planned_not_dispatched"
+  },
+  "metrics": {
+    "selected_capability_count": 1,
+    "skipped_capability_count": 0,
+    "dispatch_count": 0,
+    "human_gate_count": 0
+  }
+}
