@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { MARKER_REVIEW_KEY, reviewMarkers } from './marker-review'
+import { buildHumanoidStyleDna } from './final-build-workflow'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
@@ -256,6 +258,32 @@ function App() {
 
   const currentLandmark = landmarkOrder[currentIndex]
   const completedCount = Object.keys(landmarks).length
+  const markerReview = reviewMarkers(landmarks, imageSize)
+  const [markerError, setMarkerError] = useState('')
+
+  useEffect(() => {
+    localStorage.removeItem(MARKER_REVIEW_KEY)
+    setMarkerError('')
+    window.dispatchEvent(new Event('low-poly:markers-changed'))
+  }, [landmarks, imageSize, selectedImage.src])
+
+  function confirmMarkers() {
+    if (!markerReview.valid) return
+    try {
+      const styleDna = buildHumanoidStyleDna({ source: selectedImage.src, imageSize, landmarks })
+      localStorage.setItem(MARKER_REVIEW_KEY, JSON.stringify({ schemaVersion: 'marker-review/v1', confirmedAt: new Date().toISOString(), styleDna }))
+      const analysisKey = 'low-poly-character-studio.reference-analysis.v1'
+      let previousAnalysis = {}
+      try { previousAnalysis = JSON.parse(localStorage.getItem(analysisKey) ?? '{}') } catch { /* Manual review can replace unavailable analysis. */ }
+      localStorage.setItem(analysisKey, JSON.stringify({
+        ...previousAnalysis,
+        schemaVersion: 'humanoid-reference-analysis/v1', modelTypeId: 'humanoid/chibi-v1',
+        landmarks, imageSize, reviewSource: 'user', reviewedAt: new Date().toISOString(),
+      }))
+      window.dispatchEvent(new Event('low-poly:reference-analysis-complete'))
+      window.dispatchEvent(new Event('low-poly:markers-confirmed'))
+    } catch (error) { setMarkerError(error instanceof Error ? error.message : 'Unable to save marker review.') }
+  }
   const styleDNA = useMemo(
     () => computeStyleDNA(selectedImage.src, landmarks, imageSize),
     [selectedImage, landmarks, imageSize]
@@ -472,6 +500,14 @@ function App() {
         </aside>
 
         <section className="workspace">
+          <section className="markerReview" aria-label="Marker completion">
+            <p role="status">Required markers: {markerReview.placed} of {markerReview.total} placed. {markerReview.valid ? 'Review their positions, then confirm.' : markerReview.error}</p>
+            <div>
+              <button type="button" onClick={() => { setShowLabels(true); fitImageToCanvas() }}>Review all markers</button>
+              <button type="button" disabled={!markerReview.valid} onClick={confirmMarkers}>Confirm markers and continue</button>
+            </div>
+            {markerError ? <p role="alert">{markerError}</p> : null}
+          </section>
           <div className="canvasHeader">
             <div className="current" aria-live="polite">
               <span className="pill">{completedCount}/{landmarkOrder.length}</span>

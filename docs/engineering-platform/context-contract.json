@@ -1,0 +1,31 @@
+{
+  "schema_version": "context-contract/v1",
+  "workflow": "low-poly-character-studio",
+  "fields": [
+    {
+      "key": "product",
+      "requirement": "required",
+      "prompt": "product"
+    },
+    {
+      "key": "request",
+      "requirement": "required",
+      "prompt": "request"
+    },
+    {
+      "key": "scope",
+      "requirement": "required",
+      "prompt": "scope"
+    },
+    {
+      "key": "validation",
+      "requirement": "required",
+      "prompt": "validation"
+    },
+    {
+      "key": "constraints",
+      "requirement": "required",
+      "prompt": "constraints"
+    }
+  ]
+}
