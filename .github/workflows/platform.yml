@@ -1,0 +1,22 @@
+name: Engineering Platform governance
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  platform-governance:
+    uses: JonCunninghamDev/engineering-platform/.github/workflows/reusable-consumer-ci.yml@b107c9306161b395cbcaffebb55e47850b999560
+    with:
+      mode: full
+      enable_python: true
+      python_version: '3.12'
+      python_install_command: python -m pip install -r requirements-platform.txt
+      python_test_command: python scripts/test-platform-adoption.py
+      timeout_minutes: 10

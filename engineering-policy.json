@@ -1,0 +1,165 @@
+{
+  "schema_version": "engineering-policy/v1",
+  "platform": {
+    "repository": "JonCunninghamDev/engineering-platform",
+    "version": "v1.0.0",
+    "commit": "b107c9306161b395cbcaffebb55e47850b999560"
+  },
+  "repository": {
+    "policy_id": "low-poly-character-studio",
+    "description": "Consumer-owned policy; product, Blender, visual acceptance and delivery rules remain local."
+  },
+  "branches": {
+    "release": "main",
+    "integration": "develop",
+    "temporary_prefixes": [
+      "agent/"
+    ]
+  },
+  "profiles": [
+    "node-python-blender"
+  ],
+  "capabilities": {
+    "toolchain": [],
+    "tests": []
+  },
+  "review": {
+    "pull_requests_required": true,
+    "required_checks": [
+      "Validate delivery branch policy",
+      "Build Style Studio",
+      "Validate scripts",
+      "Blender rig and animation smoke test",
+      "platform-governance / Platform Consumer CI"
+    ],
+    "human_approval_for": [
+      "release",
+      "security",
+      "credentials",
+      "destructive_operation",
+      "shared_contract",
+      "reusable_workflow",
+      "backward_incompatible_change",
+      "cross_repository_risk"
+    ]
+  },
+  "delivery": {
+    "implementation_target": "integration",
+    "release_route": "integration_to_release",
+    "direct_release_writes": false,
+    "hotfix_route": "integration_first"
+  },
+  "permissions": {
+    "read": {
+      "tier": "autonomous",
+      "risk": "low",
+      "actions": [
+        "repository.read",
+        "issue.read",
+        "test.inspect"
+      ]
+    },
+    "bounded_write": {
+      "tier": "bounded",
+      "risk": "medium",
+      "actions": [
+        "branch.write",
+        "code.write",
+        "test.write",
+        "draft.write",
+        "issue.write",
+        "merge.integration"
+      ]
+    },
+    "consequential_write": {
+      "tier": "approval_required",
+      "risk": "high",
+      "actions": [
+        "release.write",
+        "credential.write",
+        "destructive.write",
+        "deployment.write",
+        "spending.write",
+        "authority.write"
+      ]
+    }
+  },
+  "protected_paths": [
+    "AGENTS.md",
+    "engineering-policy.json",
+    ".engineering-platform/**",
+    ".github/workflows/**",
+    "scripts/validate-delivery-route.sh",
+    "scripts/test-delivery-route.sh",
+    "scripts/test-platform-adoption.py",
+    "requirements-platform.txt"
+  ],
+  "validation": {
+    "stages": [
+      {
+        "id": "platform-adoption",
+        "stage": "pre_commit",
+        "capability": "test.python",
+        "required": true
+      },
+      {
+        "id": "node-contracts",
+        "stage": "completion_gate",
+        "capability": "test.node",
+        "required": true
+      },
+      {
+        "id": "python-contracts",
+        "stage": "completion_gate",
+        "capability": "test.python",
+        "required": true
+      },
+      {
+        "id": "blender-review",
+        "stage": "completion_gate",
+        "capability": "test.blender",
+        "required": true
+      }
+    ]
+  },
+  "execution_budgets": {
+    "max_steps": 200,
+    "max_elapsed_minutes": 45,
+    "max_retries": 2,
+    "required_dimensions": [
+      "max_steps",
+      "max_elapsed_minutes",
+      "max_retries"
+    ]
+  },
+  "overrides": [
+    {
+      "id": "local-product-owner-gates",
+      "effect": "restrict",
+      "reason": "Retain the additional product-owner gates from local AGENTS.md without inventing new released shared change-class enum values.",
+      "issue": "90",
+      "restrictions": {
+        "require_human_approval_for": [
+          "spending",
+          "public_deployment",
+          "unresolved_security_risk",
+          "unresolved_product_decision",
+          "operating_authority"
+        ]
+      }
+    }
+  ],
+  "exceptions": [
+    {
+      "id": "existing-hotfix-route",
+      "target": "delivery.hotfix_route",
+      "reason": "Local AGENTS.md and route validator preserve the existing approved main-first titled Hotfix route followed by Sync; ordinary work always targets develop. This adoption does not change that authority.",
+      "approval_reference": "AGENTS.md#hotfixes"
+    }
+  ],
+  "compatibility": {
+    "policy_schema": "engineering-policy/v1",
+    "profile_schema": "repository-profile/v1",
+    "minimum_platform_version": "1.0.0"
+  }
+}
