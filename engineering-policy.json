@@ -30,7 +30,7 @@
       "Build Style Studio",
       "Validate scripts",
       "Blender rig and animation smoke test",
-      "Platform Consumer CI"
+      "platform-governance / Platform Consumer CI"
     ],
     "human_approval_for": [
       "release",

@@ -47,6 +47,7 @@ class AdoptionTests(unittest.TestCase):
         workflow = (ROOT / '.github/workflows/platform.yml').read_text()
         self.assertIn('reusable-consumer-ci.yml@' + self.release['commit'], workflow)
         self.assertNotIn('reusable-consumer-ci.yml@develop', workflow)
+        self.assertIn('platform-governance / Platform Consumer CI', self.policy['review']['required_checks'])
 
     def test_modified_shared_contract_is_rejected(self):
         name = 'agent/operating-contract-v1.md'
