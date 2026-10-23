@@ -71,6 +71,9 @@ jobs:
       - name: Test final GLB Studio workflow
         run: pnpm final-workflow:test
 
+      - name: Test guided Studio readiness gates
+        run: pnpm --filter @low-poly-character-studio/api exec tsx --test ../style-studio/src/guided-studio-shell.test.ts
+
       - name: Test humanoid model runner
         run: pnpm model-runner:test
 

@@ -35,7 +35,7 @@ test('guided shell preserves the working pipeline surfaces', async () => {
 test('persisted readiness and build phase advance dedicated guided steps', async () => {
   const source = await readFile(sourceUrl, 'utf8')
 
-  assert.match(source, /currentStepIndexFor\(frontReady, analysisReady, buildReady, buildStep\)/)
+  assert.match(source, /currentStepIndexFor\(frontReady, analysisReady && markersConfirmed, buildReady && markersConfirmed, buildStep\)/)
   assert.match(source, /low-poly:reference-set-change/)
   assert.match(source, /low-poly:reference-analysis-complete/)
   assert.match(source, /if \(!frontReady\) return 1/)

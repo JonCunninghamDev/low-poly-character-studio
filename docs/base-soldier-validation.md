@@ -67,3 +67,15 @@ by this local report. Updated CI must generate the new style-kit artifacts and
 those artifacts must be directly reviewed before integration. Keep the PR draft
 and #81 in progress; do not claim the visual milestone, merge readiness, full
 Khronos glTF conformance, or production promotion.
+
+## Integration directive and test correction
+
+The product owner subsequently directed conversion of PR #93 to a regular PR,
+merge into `develop` after unit tests and CI pass, and deletion of the feature
+branch. This authorizes integration of the pipeline baseline with its documented
+visual defects; it does not claim visual acceptance or completion of #81.
+
+The stale guided-shell assertion was corrected to require marker confirmation
+in both readiness expressions, matching the existing behavior. That suite is now
+explicitly included in CI. The complete local 30-command sweep was rerun after
+this correction; final exact-head CI must pass before the authorized merge.
