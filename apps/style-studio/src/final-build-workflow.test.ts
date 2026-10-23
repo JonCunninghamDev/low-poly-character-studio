@@ -1,3 +1,5 @@
+import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
@@ -70,4 +72,29 @@ test('selects the newest completed validated export for the humanoid model type'
   ])
 
   assert.equal(selected?.id, 'newer')
+})
+
+// Exercise the actual Python consumer rather than duplicating its range checks.
+test('generated proportions pass Blender StyleDNA validation for conflicting image measurements', () => {
+  const variants = [
+    landmarks,
+    { ...landmarks, ShoulderLeft: { x: 80, y: 125 }, ShoulderRight: { x: 119, y: 125 },
+      WaistLeft: { x: 10, y: 175 }, WaistRight: { x: 190, y: 175 } },
+    { ...landmarks, HeadRight: { x: 1000, y: 55 }, EyeRight: { x: 900, y: 58 } },
+    { ...landmarks, EyeLeft: { x: 82, y: 200 }, ShoulderRight: { x: 1000, y: 125 } },
+  ]
+  const documents = variants.map(points => buildHumanoidStyleDna({
+    source: 'proportion-regression.png', imageSize: { width: 1200, height: 320 }, landmarks: points,
+  }))
+  assert.equal(documents[1].measurements.waistWidthPx, 180)
+  const result = spawnSync('python3', ['-c', `
+import json, sys
+from generator.style_dna import dna_from_style_document
+for document in json.load(sys.stdin):
+    dna_from_style_document(document)
+`], {
+    cwd: fileURLToPath(new URL('../../../packages/asset-compiler/blender/', import.meta.url)),
+    input: JSON.stringify(documents), encoding: 'utf8',
+  })
+  assert.equal(result.status, 0, result.stderr || String(result.error))
 })
