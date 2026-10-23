@@ -35,6 +35,8 @@ export const humanoidChibiStyleKitV1 = validateStyleKitContract({
       deformationRole: "skinned",
       variants: [
         { id: "soft-round", label: "Soft Round", sourceId: "chibi/head/soft-round-v1", compatibleRigIds: rigCompatible, materialSlots: ["skin"] },
+        { id: "broad-cheek", label: "Broad Cheek", sourceId: "chibi/head/broad-cheek-v1", compatibleRigIds: rigCompatible, materialSlots: ["skin"] },
+        { id: "tapered", label: "Tapered", sourceId: "chibi/head/tapered-v1", compatibleRigIds: rigCompatible, materialSlots: ["skin"] },
       ],
     },
     {
@@ -47,6 +49,8 @@ export const humanoidChibiStyleKitV1 = validateStyleKitContract({
       deformationRole: "presentation",
       variants: [
         { id: "vertical-oval", label: "Vertical Oval", sourceId: "chibi/eyes/vertical-oval-v1", compatibleRigIds: rigCompatible, materialSlots: ["eyes"] },
+        { id: "round", label: "Round", sourceId: "chibi/eyes/round-v1", compatibleRigIds: rigCompatible, materialSlots: ["eyes"] },
+        { id: "narrow", label: "Narrow", sourceId: "chibi/eyes/narrow-v1", compatibleRigIds: rigCompatible, materialSlots: ["eyes"] },
       ],
     },
     {
@@ -71,6 +75,7 @@ export const humanoidChibiStyleKitV1 = validateStyleKitContract({
       deformationRole: "presentation",
       variants: [
         { id: "simple-line", label: "Simple Line", sourceId: "chibi/mouth/simple-line-v1", compatibleRigIds: rigCompatible, materialSlots: ["mouth"] },
+        { id: "soft-smile", label: "Soft Smile", sourceId: "chibi/mouth/soft-smile-v1", compatibleRigIds: rigCompatible, materialSlots: ["mouth"] },
       ],
     },
     {
@@ -95,6 +100,7 @@ export const humanoidChibiStyleKitV1 = validateStyleKitContract({
       deformationRole: "presentation",
       variants: [
         { id: "faceted-cap", label: "Faceted Cap", sourceId: "chibi/hair/faceted-cap-v1", compatibleRigIds: rigCompatible, materialSlots: ["hair"] },
+        { id: "side-swept", label: "Side Swept", sourceId: "chibi/hair/side-swept-v1", compatibleRigIds: rigCompatible, materialSlots: ["hair"] },
       ],
     },
     {
@@ -107,6 +113,7 @@ export const humanoidChibiStyleKitV1 = validateStyleKitContract({
       deformationRole: "skinned",
       variants: [
         { id: "a-frame-briefs", label: "A-frame + Briefs", sourceId: "chibi/clothing/a-frame-briefs-v1", compatibleRigIds: rigCompatible, materialSlots: ["shirt", "briefs"] },
+        { id: "tee-shorts", label: "Tee + Shorts", sourceId: "chibi/clothing/tee-shorts-v1", compatibleRigIds: rigCompatible, materialSlots: ["shirt", "briefs"] },
       ],
     },
     {
@@ -177,6 +184,36 @@ export const humanoidChibiStyleKitV1 = validateStyleKitContract({
         "foot-length": 0.3,
         "cheek-fullness": 1.08,
         "cranium-roundness": 1.06,
+      },
+    },
+    {
+      id: "adventure",
+      label: "Adventure Chibi",
+      selections: {
+        "body-shape": "gold-standard",
+        "head-shape": "broad-cheek",
+        eyes: "round",
+        nose: "minimal",
+        mouth: "soft-smile",
+        ears: "rounded",
+        hair: "side-swept",
+        "torso-clothing": "tee-shorts",
+        hands: "oversized-simple",
+        feet: "bare-oversized",
+      },
+      parameters: {
+        "heads-tall": 2.66,
+        "head-width": 1.08,
+        "head-depth": 0.96,
+        "eye-spacing": 0.42,
+        "eye-height": 0.285,
+        "shoulder-width": 0.76,
+        "waist-width": 0.52,
+        "arm-length": 0.28,
+        "leg-width": 0.29,
+        "foot-length": 0.31,
+        "cheek-fullness": 1.12,
+        "cranium-roundness": 1.04,
       },
     },
   ],

@@ -32,7 +32,9 @@
     "dev": "bash scripts/dev.sh",
     "api": "pnpm --filter @low-poly-character-studio/api dev",
     "marker-review:test": "pnpm --filter @low-poly-character-studio/api exec tsx --test ../../apps/style-studio/src/marker-review.test.ts",
-    "studio:e2e:test": "node tests/browser/upload-workflow.mjs"
+    "studio:e2e:test": "node tests/browser/upload-workflow.mjs",
+    "style-kit:test": "python3 packages/asset-compiler/blender/tests/test_style_kit.py && python3 packages/asset-compiler/blender/tests/test_style_review.py",
+    "style-kit:review": "python3 scripts/chibi_style_review.py"
   },
   "devDependencies": {
     "playwright": "1.64.1"

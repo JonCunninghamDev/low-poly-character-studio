@@ -44,6 +44,12 @@ The repository currently contains:
 
 The current `humanoid/chibi-v1` milestone can be exercised locally from the approved reference through one validated animated GLB. Follow [`docs/local-vertical-slice.md`](docs/local-vertical-slice.md) for exact reproduction and human milestone checks.
 
+## Base soldier development
+
+The reproducible preset-to-rig review workflow and its current visual limitations
+are documented in [Base soldier pipeline](docs/base-soldier-pipeline.md).
+Run `pnpm style-kit:test` for fast contracts and `pnpm style-kit:review --fixture gold-standard --output-dir image-analysis/output/base-review-001` for a new local build and review.
+
 ## Local development
 
 Requirements:

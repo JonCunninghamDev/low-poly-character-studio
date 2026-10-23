@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any
@@ -180,3 +181,28 @@ def generation_metadata(dna: LittleGuyDNA, style_document: dict[str, Any] | None
             "headsTallMaximum": CHIBI_MAX_HEADS_TALL,
         },
     }
+
+
+def dna_from_generation_metadata(document: Any) -> LittleGuyDNA:
+    """Restore the actual model-stage proportions, including style-kit overrides."""
+    if not isinstance(document, dict) or document.get("schema") != "humanoid-generation-metadata/v1":
+        raise ValueError("Expected humanoid-generation-metadata/v1")
+    if document.get("modelTypeId") != MODEL_TYPE_ID:
+        raise ValueError(f"Generation metadata modelTypeId must be {MODEL_TYPE_ID}")
+    values = document.get("resolvedDna")
+    if not isinstance(values, dict) or set(values) != set(asdict(LittleGuyDNA())):
+        raise ValueError("Generation metadata must contain every resolvedDna field and no unknown fields")
+    for name, value in values.items():
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+            raise ValueError(f"resolvedDna.{name} must be a finite number")
+        if value <= 0:
+            raise ValueError(f"resolvedDna.{name} must be positive")
+    segments = values["low_poly_segments"]
+    if not isinstance(segments, int) or not 3 <= segments <= 64:
+        raise ValueError("resolvedDna.low_poly_segments must be an integer between 3 and 64")
+    dna = LittleGuyDNA(**values)
+    if not 0.5 <= dna.H <= 3.0 or not CHIBI_MIN_HEADS_TALL <= dna.H / dna.head_height <= CHIBI_MAX_HEADS_TALL:
+        raise ValueError("Resolved model proportions are outside the Chibi height envelope")
+    if not 0 < dna.knee_z < dna.waist_z < dna.neck_z < dna.head_center_z:
+        raise ValueError("Resolved model landmarks must be ordered knee, waist, neck, head")
+    return dna
