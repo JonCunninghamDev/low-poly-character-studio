@@ -155,6 +155,14 @@ assert.equal(quadrupedResult.bodyPlan.selected.value, 'articulated/quadrupedal')
 assert.ok((quadrupedResult.subject.support?.maxSupports ?? 0) >= 3)
 assert.equal(quadrupedResult.orientation.groundDirection.value, 'bottom')
 
+const fragmentedSupport = assessCharacterBodyPlan(assessCharacterInput(humanoid), {
+  ...isolateCharacterSubject(humanoid, assessCharacterInput(humanoid)),
+  support: { direction: 'left', splitRatio: 0.9, maxSupports: 7 },
+})
+assert.equal(fragmentedSupport.selected.value, 'unknown')
+assert.ok(fragmentedSupport.selected.note?.includes('fragmented'))
+assert.ok(fragmentedSupport.candidates.some(candidate => candidate.id === 'articulated/quadrupedal'), 'retain raw hypotheses for diagnosis')
+
 const rotatedHumanoid = analyzeCharacterRaster(rotateClockwise(humanoid))
 assert.equal(rotatedHumanoid.bodyPlan.selected.value, 'articulated/humanoid-bipedal')
 assert.equal(rotatedHumanoid.orientation.groundDirection.value, 'left')

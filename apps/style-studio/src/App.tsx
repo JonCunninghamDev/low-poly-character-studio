@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { MARKER_REVIEW_KEY, reviewMarkers } from './marker-review'
+import { isCurrentReferenceIntent } from './reference-intent'
 import { buildHumanoidStyleDna } from './final-build-workflow'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
@@ -261,6 +262,24 @@ function App() {
   const completedCount = Object.keys(landmarks).length
   const markerReview = reviewMarkers(landmarks, imageSize)
   const [markerError, setMarkerError] = useState('')
+  const [referenceIntentReady, setReferenceIntentReady] = useState(false)
+
+  useEffect(() => {
+    const updateIntent = (event: Event) => {
+      const input = (event as CustomEvent).detail
+      setReferenceIntentReady(isCurrentReferenceIntent(input?.userIntent, input?.references?.front?.id))
+    }
+    const clearPreviousShape = () => {
+      setLandmarks({})
+      setCurrentIndex(0)
+    }
+    window.addEventListener('low-poly:reference-set-change', updateIntent)
+    window.addEventListener('low-poly:analysis-invalidated', clearPreviousShape)
+    return () => {
+      window.removeEventListener('low-poly:reference-set-change', updateIntent)
+      window.removeEventListener('low-poly:analysis-invalidated', clearPreviousShape)
+    }
+  }, [])
 
   useEffect(() => {
     localStorage.removeItem(MARKER_REVIEW_KEY)
@@ -273,6 +292,10 @@ function App() {
     try { referenceSet = JSON.parse(localStorage.getItem('low-poly-character-studio.reference-set.v1') ?? '{}') } catch { /* Report the missing input below. */ }
     if (!hasFrontReference || !referenceSet?.references?.front) {
       setMarkerError('Upload a front image or load the example in Expand references before continuing. The canvas preview alone is not a selected reference.')
+      return
+    }
+    if (!isCurrentReferenceIntent(referenceSet.userIntent, referenceSet.references.front.id)) {
+      setMarkerError('Describe your image or choose Analyze without description before confirming markers.')
       return
     }
     if (!markerReview.valid) { setMarkerError(markerReview.error); return }
@@ -539,7 +562,7 @@ function App() {
             <p role="status">{!hasFrontReference ? 'Choose a front reference in Expand references before continuing. ' : ''}Required markers: {markerReview.placed} of {markerReview.total} placed. {markerReview.valid ? 'Review their positions, then confirm.' : markerReview.error}</p>
             <div>
               <button type="button" onClick={() => { setShowLabels(true); fitImageToCanvas() }}>Review all markers</button>
-              <button type="button" disabled={!hasFrontReference || !markerReview.valid} onClick={confirmMarkers}>Confirm markers and continue</button>
+              <button type="button" disabled={!hasFrontReference || !markerReview.valid || !referenceIntentReady} onClick={confirmMarkers}>Confirm markers and continue</button>
             </div>
             {markerError ? <p role="alert">{markerError}</p> : null}
           </section>

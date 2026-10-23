@@ -1,3 +1,5 @@
+import type { ReferenceIntent } from './reference-intent'
+
 export type RasterImage = {
   width: number
   height: number
@@ -91,6 +93,7 @@ export type CharacterFunctionalAssessment = {
 export type CharacterImageAssessment = {
   schemaVersion: 'character-image-assessment/v1'
   adapterId: 'generic-local-silhouette-v2'
+  userIntent?: ReferenceIntent
   input: CharacterInputAssessment
   subject: CharacterSubjectAssessment
   features: CharacterFeatureAssessment
@@ -573,7 +576,11 @@ export function assessCharacterBodyPlan(
   const second = ranked[1]
   const separation = top.confidence - second.confidence
   const qualityGate = input.usability.value === 'usable'
-  const classified = qualityGate && top.confidence >= 0.58 && separation >= 0.08
+  // This primitive only distinguishes one/two/four-support silhouettes. Many
+  // disconnected edge runs may be shading or segmentation noise, not limbs.
+  // Do not turn those into a maximally confident quadruped classification.
+  const fragmentedSupport = supportCount > 4
+  const classified = qualityGate && !fragmentedSupport && top.confidence >= 0.58 && separation >= 0.08
 
   return {
     selected: classified
@@ -583,7 +590,9 @@ export function assessCharacterBodyPlan(
           confidence: Math.min(top.confidence, 0.49),
           rubricLevel: qualityGate ? 1 : 0,
           origin: 'inferred',
-          note: qualityGate
+          note: fragmentedSupport
+            ? 'Support evidence is fragmented; a body plan cannot be identified reliably.'
+            : qualityGate
             ? 'Top morphology candidates are not sufficiently separated; abstaining.'
             : 'Image quality does not meet the morphology classification gate.',
         },

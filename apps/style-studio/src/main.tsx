@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { LandingExperience } from './LandingExperience'
 import { StudioShell } from './StudioShell'
+import { MinimalStudio } from './MinimalStudio'
 import { installCanvasNativeScroll } from './canvas-native-scroll'
 import './styles.css'
 import './canvas-native-scroll.css'
@@ -17,7 +18,10 @@ function guestRouteRequested() {
 }
 
 function App() {
+  const advanced = new URLSearchParams(window.location.search).get('advanced') === '1'
   const [guestStarted, setGuestStarted] = useState(guestRouteRequested)
+
+  if (!advanced) return <MinimalStudio />
 
   if (guestStarted) {
     return <StudioShell />

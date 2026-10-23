@@ -98,6 +98,15 @@ export function buildHumanoidStyleDna(input: {
   const shoulderWidthToHeadWidth = shoulderWidthPx / headWidthPx
   const waistWidthToHeadWidth = waistWidthPx / headWidthPx
 
+  // Resolve dependent dimensions against the same envelope Blender validates.
+  // Preserve the raw image measurements below for review and later refinement.
+  const headWidth = clamp(headWidthToHeight * 0.42, 0.32, 0.55)
+  const torsoWidth = clamp(
+    clamp(shoulderWidthToHeadWidth * 0.42, 0.20, 0.42),
+    headWidth * 0.35,
+    headWidth * 1.10,
+  )
+
   return {
     schema: 'humanoid-style-dna/v1',
     modelTypeId: 'humanoid/chibi-v1',
@@ -120,13 +129,13 @@ export function buildHumanoidStyleDna(input: {
     },
     blenderHints: {
       totalHeight: 1.35,
-      headWidth: clamp(headWidthToHeight * 0.42, 0.32, 0.55),
+      headWidth,
       headDepth: 0.36,
       headHeight: 0.42,
-      eyeSpacing: clamp(eyeSpacingToHeadWidth * 0.42, 0.12, 0.28),
-      eyeZ: clamp(1.35 - eyeHeightFromTopRatio * 0.42, 0.82, 1.22),
-      torsoWidth: clamp(shoulderWidthToHeadWidth * 0.42, 0.20, 0.42),
-      waistWidth: clamp(waistWidthToHeadWidth * 0.42, 0.18, 0.38),
+      eyeSpacing: clamp(clamp(eyeSpacingToHeadWidth * 0.42, 0.12, 0.28), headWidth * 0.15, headWidth * 0.75),
+      eyeZ: clamp(1.35 - eyeHeightFromTopRatio * 0.42, 1.35 - 0.42, 1.22),
+      torsoWidth,
+      waistWidth: clamp(clamp(waistWidthToHeadWidth * 0.42, 0.18, 0.38), torsoWidth * 0.55, torsoWidth * 1.10),
       legLength: 0.27,
     },
   }

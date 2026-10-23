@@ -99,6 +99,14 @@
 .referencePlaceholder { height: 110px; display: grid; place-items: center; background: #0d0f15; color: #7985a8; border-radius: 7px; margin-bottom: 7px; }
 .referenceSlotActions { display: flex; gap: 7px; margin-top: 9px; }
 .referenceSlotActions button { flex: 1; }
+.referenceIntent { padding: 10px; margin-bottom: 12px; border: 1px solid #6d7ba5; border-radius: 10px; background: #1b1f2d; }
+.referenceDescription { display: grid; gap: 7px; min-width: 0; }
+.referenceDescription textarea { box-sizing: border-box; width: 100%; resize: vertical; min-height: 72px; color: #fff; background: #0d0f15; border: 1px solid #6d7ba5; border-radius: 6px; padding: 8px; font: inherit; }
+.referenceDescription span, .referenceDescription small, .referenceIntentDecision { color: #c6cde1; font-size: 12px; line-height: 1.4; }
+.referenceIntentActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.referenceIntentActions button { flex: 1 1 140px; padding: 8px 10px; border: 1px solid #6d7ba5; border-radius: 8px; background: #24293a; color: #fff; font-weight: 700; cursor: pointer; }
+.referenceIntentActions button:disabled { opacity: 0.55; cursor: default; }
+.referenceIntentActions button:focus-visible, .referenceDescription textarea:focus-visible { outline: 2px solid #ffd66b; outline-offset: 2px; }
 .referenceError { color: #ffb4a8; font-size: 12px; margin-top: 8px; }
 .referenceRequirement { color: #ffd66b; font-size: 13px; margin-top: 10px; }
 .referenceManager details { margin-top: 10px; }

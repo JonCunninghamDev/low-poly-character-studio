@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { MARKER_REVIEW_KEY, readConfirmedStyleDna } from './marker-review'
+import { isCurrentReferenceIntent } from './reference-intent'
 import './final-build-workflow.css'
 
 const API_BASE = 'http://localhost:3001'
@@ -129,6 +130,10 @@ function VerticalSliceBuildWorkflow({ modelTypeId, activeStep, onStepChange }: V
     onStepChange('generate')
     try {
       if (modelTypeId !== 'humanoid/chibi-v1') throw new Error(`Character generation is not available for ${modelTypeId}.`)
+      const referenceSet = readJson('low-poly-character-studio.reference-set.v1') as { userIntent?: unknown; references?: { front?: { id?: string } } } | null
+      if (!isCurrentReferenceIntent(referenceSet?.userIntent, referenceSet?.references?.front?.id)) {
+        throw new Error('Describe your image or explicitly analyze without a description before generation.')
+      }
       setMessage('Creating the character from the confirmed references and shape…')
       const created = await requestJson<{ ok: true; job: Job }>('/jobs', {
         method: 'POST',
@@ -136,7 +141,7 @@ function VerticalSliceBuildWorkflow({ modelTypeId, activeStep, onStepChange }: V
           modelTypeId,
           input: {
             styleDna: readStyleDna(),
-            referenceSet: readJson('low-poly-character-studio.reference-set.v1'),
+            referenceSet,
             analysis: readJson('low-poly-character-studio.reference-analysis.v1'),
             modelTypeConfirmation: readJson('low-poly-character-studio.model-type-confirmation.v1'),
           },

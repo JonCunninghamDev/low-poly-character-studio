@@ -10,13 +10,11 @@ The first supported model type is a stylized Chibi humanoid. The system must be 
 
 ## Product experience direction
 
-The Studio should present this capability as a polished creative product rather than exposing an internal pipeline console. The approved experience has three connected surfaces:
+The default experience is a minimal converter, following the product owner's latest direction and Sprite Sheet Maker reference. A simple header leads directly into one workspace with three views: **Uploaded image**, **3D model**, and **Animations**.
 
-1. a landing page that proves the product with a Studio-created animated character demonstration and concise benefit tiles;
-2. a sign-in or `Continue as guest` entry, with guest mode supporting the current local workflow;
-3. a guided workspace with a permanent step navigator, dominant visual work surface, and context-sensitive inspector.
+Users upload and preview an image, choose **Convert to 3D**, see honest conversion progress, then inspect the real generated model and its available animation clips. The original image remains accessible throughout. Description is optional guidance. Uncertain model interpretation receives one plain-language confirmation; unsupported shapes and failed validation stay explicit.
 
-Users should see plain-language steps, one primary task at a time, and progressively disclosed technical detail. Internal terms such as StyleDNA, style-kit contracts, manifests, capability profiles, and stage artifacts remain available for reproducibility and advanced diagnostics but do not drive the primary navigation.
+The permanent step navigator, marker lists, readiness panels, model-type catalog, diagnostics and account/guest gate do not appear in the default path. The existing guided workspace remains available through an optional **Advanced editor** link. Technical detail stays there rather than surrounding the primary upload/conversion task. Downloads require validated output. The current generator supports stylized humanoids; this layout does not imply arbitrary morphology or new animation capabilities.
 
 The canonical interaction, responsive, accessibility, completion, and migration specification is `docs/ui-product-experience.md`.
 

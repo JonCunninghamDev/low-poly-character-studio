@@ -6,7 +6,7 @@ OUTPUT_DIR="${1:-$ROOT_DIR/image-analysis/output/responsive-studio}"
 PORT="${STUDIO_PREVIEW_PORT:-4173}"
 LANDING_URL="http://127.0.0.1:${PORT}/"
 HOW_IT_WORKS_URL="${LANDING_URL}#how-it-works"
-BASE_URL="${LANDING_URL}?guest=1&modelType=humanoid%2Fchibi-v1"
+BASE_URL="${LANDING_URL}?advanced=1&guest=1&modelType=humanoid%2Fchibi-v1"
 
 find_chrome() {
   for candidate in google-chrome google-chrome-stable chromium chromium-browser; do
@@ -38,6 +38,19 @@ for _ in $(seq 1 40); do
   sleep 0.25
 done
 curl --fail --silent "$LANDING_URL" >/dev/null
+
+# Validate the default minimal workspace with a real GLB fixture and mocked jobs.
+PLAYWRIGHT_CHROMIUM_EXECUTABLE="$CHROME" \
+  STUDIO_URL="$LANDING_URL" \
+  STUDIO_MINIMAL_EVIDENCE_DIR="$OUTPUT_DIR/minimal-studio" \
+  pnpm exec node tests/browser/minimal-workspace.mjs
+
+# Exercise actual uploads/description decisions and retain their browser proof
+# alongside the static responsive captures in the existing CI artifact.
+PLAYWRIGHT_CHROMIUM_EXECUTABLE="$CHROME" \
+  STUDIO_URL="$LANDING_URL" \
+  STUDIO_E2E_EVIDENCE_DIR="$OUTPUT_DIR/upload-workflow" \
+  pnpm studio:e2e:test
 
 capture() {
   local name="$1"
