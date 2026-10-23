@@ -1,0 +1,253 @@
+{
+  "schema_version": "verification-report/v1",
+  "agent": {
+    "role": "verifier",
+    "version": "1.0.0",
+    "service_tier": "basic"
+  },
+  "task_id": "upload-workflow-001",
+  "plan_run_id": "orchestrator-5d82b60d-4ea9-416b-ab2b-2bcd0f512aaa",
+  "status": "verified",
+  "checks": [
+    {
+      "name": "schema-linkage",
+      "status": "passed",
+      "reason": "Builder task and change-set must use v1 contracts"
+    },
+    {
+      "name": "task-linkage",
+      "status": "passed",
+      "reason": "change-set task_id must equal assignment id"
+    },
+    {
+      "name": "plan-linkage",
+      "status": "passed",
+      "reason": "plan run and capability must match Builder task"
+    },
+    {
+      "name": "workflow-goal",
+      "status": "passed",
+      "reason": "workflow and goal must match"
+    },
+    {
+      "name": "builder-handoff",
+      "status": "passed",
+      "reason": "Builder must hand off an unapplied proposal"
+    },
+    {
+      "name": "zero-write",
+      "status": "passed",
+      "reason": "Basic Builder evidence must record zero repository writes"
+    },
+    {
+      "name": "change-count",
+      "status": "passed",
+      "reason": "task, evidence, and summary change counts must agree"
+    },
+    {
+      "name": "change-1-scope",
+      "status": "passed",
+      "reason": "'apps/style-studio/src/App.tsx' must be safe, allowed, and unprotected"
+    },
+    {
+      "name": "change-1-identity",
+      "status": "passed",
+      "reason": "sequence/path/operation/action must match the Builder task"
+    },
+    {
+      "name": "change-1-hashes",
+      "status": "passed",
+      "reason": "hashes are independently recomputed from task content"
+    },
+    {
+      "name": "change-1-diff",
+      "status": "passed",
+      "reason": "unified diff is independently recomputed from task content"
+    },
+    {
+      "name": "change-2-scope",
+      "status": "passed",
+      "reason": "'apps/style-studio/src/ReferenceWorkspace.tsx' must be safe, allowed, and unprotected"
+    },
+    {
+      "name": "change-2-identity",
+      "status": "passed",
+      "reason": "sequence/path/operation/action must match the Builder task"
+    },
+    {
+      "name": "change-2-hashes",
+      "status": "passed",
+      "reason": "hashes are independently recomputed from task content"
+    },
+    {
+      "name": "change-2-diff",
+      "status": "passed",
+      "reason": "unified diff is independently recomputed from task content"
+    },
+    {
+      "name": "change-3-scope",
+      "status": "passed",
+      "reason": "'apps/style-studio/src/StudioShell.tsx' must be safe, allowed, and unprotected"
+    },
+    {
+      "name": "change-3-identity",
+      "status": "passed",
+      "reason": "sequence/path/operation/action must match the Builder task"
+    },
+    {
+      "name": "change-3-hashes",
+      "status": "passed",
+      "reason": "hashes are independently recomputed from task content"
+    },
+    {
+      "name": "change-3-diff",
+      "status": "passed",
+      "reason": "unified diff is independently recomputed from task content"
+    },
+    {
+      "name": "change-4-scope",
+      "status": "passed",
+      "reason": "'apps/style-studio/src/responsive-studio.test.ts' must be safe, allowed, and unprotected"
+    },
+    {
+      "name": "change-4-identity",
+      "status": "passed",
+      "reason": "sequence/path/operation/action must match the Builder task"
+    },
+    {
+      "name": "change-4-hashes",
+      "status": "passed",
+      "reason": "hashes are independently recomputed from task content"
+    },
+    {
+      "name": "change-4-diff",
+      "status": "passed",
+      "reason": "unified diff is independently recomputed from task content"
+    },
+    {
+      "name": "change-5-scope",
+      "status": "passed",
+      "reason": "'apps/style-studio/src/studio-simplification.css' must be safe, allowed, and unprotected"
+    },
+    {
+      "name": "change-5-identity",
+      "status": "passed",
+      "reason": "sequence/path/operation/action must match the Builder task"
+    },
+    {
+      "name": "change-5-hashes",
+      "status": "passed",
+      "reason": "hashes are independently recomputed from task content"
+    },
+    {
+      "name": "change-5-diff",
+      "status": "passed",
+      "reason": "unified diff is independently recomputed from task content"
+    },
+    {
+      "name": "change-6-scope",
+      "status": "passed",
+      "reason": "'docs/upload-workflow-validation.md' must be safe, allowed, and unprotected"
+    },
+    {
+      "name": "change-6-identity",
+      "status": "passed",
+      "reason": "sequence/path/operation/action must match the Builder task"
+    },
+    {
+      "name": "change-6-hashes",
+      "status": "passed",
+      "reason": "hashes are independently recomputed from task content"
+    },
+    {
+      "name": "change-6-diff",
+      "status": "passed",
+      "reason": "unified diff is independently recomputed from task content"
+    },
+    {
+      "name": "change-7-scope",
+      "status": "passed",
+      "reason": "'package.json' must be safe, allowed, and unprotected"
+    },
+    {
+      "name": "change-7-identity",
+      "status": "passed",
+      "reason": "sequence/path/operation/action must match the Builder task"
+    },
+    {
+      "name": "change-7-hashes",
+      "status": "passed",
+      "reason": "hashes are independently recomputed from task content"
+    },
+    {
+      "name": "change-7-diff",
+      "status": "passed",
+      "reason": "unified diff is independently recomputed from task content"
+    },
+    {
+      "name": "change-8-scope",
+      "status": "passed",
+      "reason": "'pnpm-lock.yaml' must be safe, allowed, and unprotected"
+    },
+    {
+      "name": "change-8-identity",
+      "status": "passed",
+      "reason": "sequence/path/operation/action must match the Builder task"
+    },
+    {
+      "name": "change-8-hashes",
+      "status": "passed",
+      "reason": "hashes are independently recomputed from task content"
+    },
+    {
+      "name": "change-8-diff",
+      "status": "passed",
+      "reason": "unified diff is independently recomputed from task content"
+    },
+    {
+      "name": "change-9-scope",
+      "status": "passed",
+      "reason": "'tests/browser/upload-workflow.mjs' must be safe, allowed, and unprotected"
+    },
+    {
+      "name": "change-9-identity",
+      "status": "passed",
+      "reason": "sequence/path/operation/action must match the Builder task"
+    },
+    {
+      "name": "change-9-hashes",
+      "status": "passed",
+      "reason": "hashes are independently recomputed from task content"
+    },
+    {
+      "name": "change-9-diff",
+      "status": "passed",
+      "reason": "unified diff is independently recomputed from task content"
+    },
+    {
+      "name": "summary-counts",
+      "status": "passed",
+      "reason": "summary operation counts must match the task"
+    },
+    {
+      "name": "candidate-code-execution",
+      "status": "unavailable_basic_tier",
+      "reason": "Basic Verifier inspects evidence only and does not execute candidate code"
+    }
+  ],
+  "summary": {
+    "change_count": 9,
+    "passed": 44,
+    "failed": 0,
+    "unavailable": 1
+  },
+  "execution": {
+    "repository_writes": 0,
+    "candidate_code_executions": 0
+  },
+  "handoff": {
+    "target": "reviewer",
+    "allowed": true,
+    "artifact": "verification-report/v1"
+  }
+}

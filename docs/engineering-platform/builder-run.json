@@ -1,0 +1,62 @@
+{
+  "schema_version": "agent-run-report/v1",
+  "run_id": "builder-ae9319d5-b73c-48c9-8287-5e239ff236cd",
+  "agent": {
+    "role": "builder",
+    "version": "1.0.0",
+    "service_tier": "basic",
+    "autonomy": "supervised",
+    "mode": "production"
+  },
+  "why_invoked": "An explicit Builder assignment authorizes a scope-checked candidate change set for a Builder-owned execution-plan capability.",
+  "workflow": "low-poly-character-studio",
+  "status": "complete",
+  "decisions": [
+    {
+      "decision": "candidate_change_set_created",
+      "reason": "Accepted 7 bounded create/update change(s) inside declared scope with zero repository writes at Basic tier."
+    }
+  ],
+  "capabilities": {
+    "used": [
+      "validate_task_assignment",
+      "validate_plan_linkage",
+      "enforce_change_scope",
+      "normalize_candidate_changes",
+      "compute_diff_and_hash_evidence",
+      "explain_change_decisions",
+      "produce_change_set"
+    ],
+    "available_unused": [],
+    "locked_by_tier": {
+      "managed": [
+        "apply_changes_to_workspace",
+        "run_focused_validation",
+        "bounded_implementation_iteration",
+        "update_task_state"
+      ],
+      "full": [
+        "multi_file_refactor_strategy",
+        "dependency_migration",
+        "autonomous_implementation_recovery",
+        "optimize_implementation_sequence"
+      ]
+    }
+  },
+  "outputs": [
+    "change-set.json"
+  ],
+  "handoff": {
+    "target": "verifier",
+    "artifact": "change-set.json",
+    "allowed": true,
+    "execution_status": "proposed_not_applied"
+  },
+  "metrics": {
+    "change_count": 7,
+    "proposed_write_count": 7,
+    "actual_write_count": 0,
+    "create_count": 2,
+    "update_count": 5
+  }
+}

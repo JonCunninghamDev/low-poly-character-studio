@@ -1,0 +1,109 @@
+{
+  "schema_version": "change-set/v1",
+  "run": {
+    "id": "builder-ae9319d5-b73c-48c9-8287-5e239ff236cd",
+    "created_at": "2026-10-22T15:35:09.281262+00:00"
+  },
+  "agent": {
+    "role": "builder",
+    "version": "1.0.0",
+    "service_tier": "basic",
+    "autonomy": "supervised",
+    "mode": "production"
+  },
+  "workflow": "low-poly-character-studio",
+  "goal": "Create Low Poly Character Studio: review markers, generate a model, rig and animate it, validate and export a GLB.",
+  "plan_run_id": "orchestrator-f0a8b27d-b426-429d-ab39-8d72f91bb49b",
+  "task_id": "studio-marker-review-001",
+  "assignment_source": "human",
+  "assigned_capability": "studio.implement",
+  "selected_plan_sequence": 1,
+  "scope": {
+    "allowed_paths": [
+      "apps/style-studio/src/",
+      "package.json"
+    ],
+    "protected_paths": [
+      "AGENTS.md",
+      ".github/"
+    ]
+  },
+  "changes": [
+    {
+      "sequence": 1,
+      "path": "apps/style-studio/src/App.tsx",
+      "operation": "update",
+      "action": "WOULD_WRITE",
+      "before_sha256": "72ffe61977075e2552f73e968126f567f49de27694e2995e7e3ab1d33598a085",
+      "after_sha256": "5fe6c177505eb1edd0c41ddeb96bead92502bc953f2ca783bca13a9433d2a4fe",
+      "diff": "--- a/apps/style-studio/src/App.tsx\n+++ b/apps/style-studio/src/App.tsx\n@@ -1,4 +1,6 @@\n import React, { useEffect, useMemo, useRef, useState } from 'react'\n+import { MARKER_REVIEW_KEY, reviewMarkers } from './marker-review'\n+import { buildHumanoidStyleDna } from './final-build-workflow'\n import * as THREE from 'three'\n import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'\n \n@@ -256,6 +258,32 @@\n \n   const currentLandmark = landmarkOrder[currentIndex]\n   const completedCount = Object.keys(landmarks).length\n+  const markerReview = reviewMarkers(landmarks, imageSize)\n+  const [markerError, setMarkerError] = useState('')\n+\n+  useEffect(() => {\n+    localStorage.removeItem(MARKER_REVIEW_KEY)\n+    setMarkerError('')\n+    window.dispatchEvent(new Event('low-poly:markers-changed'))\n+  }, [landmarks, imageSize, selectedImage.src])\n+\n+  function confirmMarkers() {\n+    if (!markerReview.valid) return\n+    try {\n+      const styleDna = buildHumanoidStyleDna({ source: selectedImage.src, imageSize, landmarks })\n+      localStorage.setItem(MARKER_REVIEW_KEY, JSON.stringify({ schemaVersion: 'marker-review/v1', confirmedAt: new Date().toISOString(), styleDna }))\n+      const analysisKey = 'low-poly-character-studio.reference-analysis.v1'\n+      let previousAnalysis = {}\n+      try { previousAnalysis = JSON.parse(localStorage.getItem(analysisKey) ?? '{}') } catch { /* Manual review can replace unavailable analysis. */ }\n+      localStorage.setItem(analysisKey, JSON.stringify({\n+        ...previousAnalysis,\n+        schemaVersion: 'humanoid-reference-analysis/v1', modelTypeId: 'humanoid/chibi-v1',\n+        landmarks, imageSize, reviewSource: 'user', reviewedAt: new Date().toISOString(),\n+      }))\n+      window.dispatchEvent(new Event('low-poly:reference-analysis-complete'))\n+      window.dispatchEvent(new Event('low-poly:markers-confirmed'))\n+    } catch (error) { setMarkerError(error instanceof Error ? error.message : 'Unable to save marker review.') }\n+  }\n   const styleDNA = useMemo(\n     () => computeStyleDNA(selectedImage.src, landmarks, imageSize),\n     [selectedImage, landmarks, imageSize]\n@@ -472,6 +500,14 @@\n         </aside>\n \n         <section className=\"workspace\">\n+          <section className=\"markerReview\" aria-label=\"Marker completion\">\n+            <p role=\"status\">Required markers: {markerReview.placed} of {markerReview.total} placed. {markerReview.valid ? 'Review their positions, then confirm.' : markerReview.error}</p>\n+            <div>\n+              <button type=\"button\" onClick={() => { setShowLabels(true); fitImageToCanvas() }}>Review all markers</button>\n+              <button type=\"button\" disabled={!markerReview.valid} onClick={confirmMarkers}>Confirm markers and continue</button>\n+            </div>\n+            {markerError ? <p role=\"alert\">{markerError}</p> : null}\n+          </section>\n           <div className=\"canvasHeader\">\n             <div className=\"current\" aria-live=\"polite\">\n               <span className=\"pill\">{completedCount}/{landmarkOrder.length}</span>\n"
+    },
+    {
+      "sequence": 2,
+      "path": "apps/style-studio/src/StudioShell.tsx",
+      "operation": "update",
+      "action": "WOULD_WRITE",
+      "before_sha256": "cff5d22489da1be1ae975eeca1dd63f774134ea3a0d0e8384600f31fd47c3dc7",
+      "after_sha256": "262163b157934e71d375adcb4bbcb596ec924d2a2e0cd135108773722b1e376c",
+      "diff": "--- a/apps/style-studio/src/StudioShell.tsx\n+++ b/apps/style-studio/src/StudioShell.tsx\n@@ -6,6 +6,7 @@\n import { ReferenceWorkspace } from './ReferenceWorkspace'\n import { VerticalSliceBuildWorkflow, type GuidedBuildStep } from './VerticalSliceBuildWorkflow'\n import { VerticalSliceReadinessPanel } from './VerticalSliceReadiness'\n+import { MARKER_REVIEW_KEY } from './marker-review'\n import './responsive-studio.css'\n import './responsive-studio-mobile.css'\n import './vertical-slice-readiness.css'\n@@ -86,6 +87,7 @@\n   const [frontReady, setFrontReady] = useState(hasFrontReference)\n   const [analysisReady, setAnalysisReady] = useState(hasReferenceAnalysis)\n   const [buildReady, setBuildReady] = useState(false)\n+  const [markersConfirmed, setMarkersConfirmed] = useState(false)\n   const [buildStep, setBuildStep] = useState<GuidedBuildStep>('generate')\n   const [stepsOpen, setStepsOpen] = useState(false)\n   const [inspectorOpen, setInspectorOpen] = useState(false)\n@@ -106,9 +108,15 @@\n       if (!nextFrontReady) setAnalysisReady(false)\n     }\n     const onAnalysisComplete = () => setAnalysisReady(true)\n+    const onMarkersChanged = () => { setMarkersConfirmed(false); setBuildReady(false) }\n+    const onMarkersConfirmed = () => setMarkersConfirmed(Boolean(localStorage.getItem(MARKER_REVIEW_KEY)))\n+    window.addEventListener('low-poly:markers-changed', onMarkersChanged)\n+    window.addEventListener('low-poly:markers-confirmed', onMarkersConfirmed)\n     window.addEventListener('low-poly:reference-set-change', onReferenceSetChange)\n     window.addEventListener('low-poly:reference-analysis-complete', onAnalysisComplete)\n     return () => {\n+      window.removeEventListener('low-poly:markers-changed', onMarkersChanged)\n+      window.removeEventListener('low-poly:markers-confirmed', onMarkersConfirmed)\n       window.removeEventListener('low-poly:reference-set-change', onReferenceSetChange)\n       window.removeEventListener('low-poly:reference-analysis-complete', onAnalysisComplete)\n     }\n@@ -118,7 +126,7 @@\n     if (!buildReady) setBuildStep('generate')\n   }, [buildReady])\n \n-  const currentStepIndex = currentStepIndexFor(frontReady, analysisReady, buildReady, buildStep)\n+  const currentStepIndex = currentStepIndexFor(frontReady, analysisReady && markersConfirmed, buildReady && markersConfirmed, buildStep)\n   const currentStep = WORKFLOW_STEPS[currentStepIndex]\n   const inspector = useMemo(() => inspectorCopy(currentStep), [currentStep])\n   const isReferenceStep = currentStepIndex <= 3\n"
+    },
+    {
+      "sequence": 3,
+      "path": "apps/style-studio/src/VerticalSliceBuildWorkflow.tsx",
+      "operation": "update",
+      "action": "WOULD_WRITE",
+      "before_sha256": "078642b47f5f47c1f4520a20e1d66a0107795a693b26fc232b77852727655ddb",
+      "after_sha256": "f52de9617dde2307b6ae81a0d037f0253a30245c9bc6f71e6a42b13ddc3b4f95",
+      "diff": "--- a/apps/style-studio/src/VerticalSliceBuildWorkflow.tsx\n+++ b/apps/style-studio/src/VerticalSliceBuildWorkflow.tsx\n@@ -1,7 +1,7 @@\n import React, { useEffect, useRef, useState } from 'react'\n import * as THREE from 'three'\n import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'\n-import { HUMANOID_LANDMARK_KEYS, buildHumanoidStyleDna, type HumanoidLandmarkKey, type Point } from './final-build-workflow'\n+import { MARKER_REVIEW_KEY, readConfirmedStyleDna } from './marker-review'\n import './final-build-workflow.css'\n \n const API_BASE = 'http://localhost:3001'\n@@ -40,21 +40,7 @@\n }\n \n function readStyleDna() {\n-  const image = document.querySelector<HTMLImageElement>('.imageLayer img')\n-  if (!image) throw new Error('Load and analyze a front reference before building.')\n-  const landmarks: Partial<Record<HumanoidLandmarkKey, Point>> = {}\n-  for (const key of HUMANOID_LANDMARK_KEYS) {\n-    const marker = document.querySelector<HTMLElement>(`.imageLayer [data-landmark=\"${key}\"]`)\n-    if (!marker) continue\n-    const x = Number.parseFloat(marker.style.left)\n-    const y = Number.parseFloat(marker.style.top)\n-    if (Number.isFinite(x) && Number.isFinite(y)) landmarks[key] = { x, y }\n-  }\n-  return buildHumanoidStyleDna({\n-    source: image.currentSrc || image.src,\n-    imageSize: { width: image.naturalWidth || image.width, height: image.naturalHeight || image.height },\n-    landmarks,\n-  })\n+  return readConfirmedStyleDna(localStorage.getItem(MARKER_REVIEW_KEY))\n }\n \n function Preview({ url, clip }: { url: string; clip: string | null }) {\n"
+    },
+    {
+      "sequence": 4,
+      "path": "apps/style-studio/src/marker-review.test.ts",
+      "operation": "create",
+      "action": "WOULD_WRITE",
+      "before_sha256": null,
+      "after_sha256": "3dd0c67060f436043fb94e061dddb9707cf9e8ea87d9451c0fc47a7faa6c3ff5",
+      "diff": "--- /dev/null\n+++ b/apps/style-studio/src/marker-review.test.ts\n@@ -0,0 +1,44 @@\n+import assert from 'node:assert/strict'\n+import test from 'node:test'\n+import { buildHumanoidStyleDna, type HumanoidLandmarks } from './final-build-workflow'\n+import { reviewMarkers, readConfirmedStyleDna } from './marker-review'\n+const landmarks: HumanoidLandmarks = {\n+  HeadTop: { x: 100, y: 20 },\n+  Chin: { x: 100, y: 100 },\n+  HeadLeft: { x: 60, y: 55 },\n+  HeadRight: { x: 140, y: 55 },\n+  EyeLeft: { x: 82, y: 58 },\n+  EyeRight: { x: 118, y: 58 },\n+  ShoulderLeft: { x: 65, y: 125 },\n+  ShoulderRight: { x: 135, y: 125 },\n+  WaistLeft: { x: 72, y: 175 },\n+  WaistRight: { x: 128, y: 175 },\n+  FeetBottom: { x: 100, y: 300 },\n+}\n+const imageSize = { width: 200, height: 320 }\n+test('lists missing markers instead of treating partial placement as complete', () => {\n+  const review = reviewMarkers({ HeadTop: landmarks.HeadTop }, imageSize)\n+  assert.equal(review.placed, 1)\n+  assert.equal(review.valid, false)\n+  assert.ok(review.missing.includes('FeetBottom'))\n+})\n+test('rejects nonfinite, out-of-bounds, reversed and degenerate markers', () => {\n+  for (const changed of [\n+    { HeadTop: { x: NaN, y: 20 } },\n+    { FeetBottom: { x: 100, y: 321 } },\n+    { EyeLeft: landmarks.EyeRight, EyeRight: landmarks.EyeLeft },\n+    { Chin: landmarks.HeadTop },\n+    { FeetBottom: { x: 100, y: 10 } },\n+  ]) assert.equal(reviewMarkers({ ...landmarks, ...changed }, imageSize).valid, false)\n+})\n+test('confirmed StyleDNA remains usable without an editor DOM', () => {\n+  const styleDna = buildHumanoidStyleDna({ source: 'front.png', imageSize, landmarks })\n+  const stored = JSON.stringify({ schemaVersion: 'marker-review/v1', confirmedAt: '2026-10-22T00:00:00Z', styleDna })\n+  assert.deepEqual(readConfirmedStyleDna(stored), styleDna)\n+  assert.equal(reviewMarkers(landmarks, imageSize).valid, true)\n+})\n+test('generation rejects missing, unconfirmed or invalid saved review', () => {\n+  assert.throws(() => readConfirmedStyleDna(null), /confirm markers/)\n+  assert.throws(() => readConfirmedStyleDna('{}'), /confirm markers/)\n+  assert.throws(() => readConfirmedStyleDna(JSON.stringify({ schemaVersion: 'marker-review/v1', confirmedAt: 'now', styleDna: { source: 'front.png', imageSize, landmarks: {} } })), /missing markers/)\n+})\n"
+    },
+    {
+      "sequence": 5,
+      "path": "apps/style-studio/src/marker-review.ts",
+      "operation": "create",
+      "action": "WOULD_WRITE",
+      "before_sha256": null,
+      "after_sha256": "18e518d96dd21e1a023ac4918d4baacddb9edeed78a24e3c2fa0087fcc15a870",
+      "diff": "--- /dev/null\n+++ b/apps/style-studio/src/marker-review.ts\n@@ -0,0 +1,33 @@\n+import { HUMANOID_LANDMARK_KEYS, buildHumanoidStyleDna, type HumanoidLandmarkKey, type Point } from './final-build-workflow'\n+\n+export const MARKER_REVIEW_KEY = 'low-poly-character-studio.marker-review.v1'\n+\n+export function reviewMarkers(landmarks: Partial<Record<HumanoidLandmarkKey, Point>>, imageSize: { width: number; height: number }) {\n+  const missing = HUMANOID_LANDMARK_KEYS.filter((key) => !landmarks[key])\n+  const invalid = HUMANOID_LANDMARK_KEYS.filter((key) => {\n+    const point = landmarks[key]\n+    return point && (!Number.isFinite(point.x) || !Number.isFinite(point.y) || point.x < 0 || point.y < 0 || point.x > imageSize.width || point.y > imageSize.height)\n+  })\n+  let error = missing.length ? `Place missing markers: ${missing.join(', ')}.` : invalid.length ? `Move markers inside the image: ${invalid.join(', ')}.` : ''\n+  if (!error) {\n+    try {\n+      if (!(imageSize.width > 0 && imageSize.height > 0)) throw new Error('Load a reference image first.')\n+      buildHumanoidStyleDna({ source: 'marker-review', imageSize, landmarks })\n+      if (landmarks.HeadTop!.y >= landmarks.Chin!.y || landmarks.Chin!.y >= landmarks.FeetBottom!.y) throw new Error('Head top, chin, and feet must run from top to bottom.')\n+      for (const [left, right] of [['HeadLeft', 'HeadRight'], ['EyeLeft', 'EyeRight'], ['ShoulderLeft', 'ShoulderRight'], ['WaistLeft', 'WaistRight']] as const) {\n+        if (landmarks[left]!.x >= landmarks[right]!.x) throw new Error(`${left} must be to the image-left of ${right}.`)\n+      }\n+    } catch (cause) { error = cause instanceof Error ? cause.message : 'Check marker positions.' }\n+  }\n+  return { missing, invalid, placed: HUMANOID_LANDMARK_KEYS.length - missing.length, total: HUMANOID_LANDMARK_KEYS.length, valid: !error, error }\n+}\n+\n+export function readConfirmedStyleDna(value: string | null) {\n+  if (!value) throw new Error('Review and confirm markers before generation.')\n+  const review = JSON.parse(value)\n+  if (review.schemaVersion !== 'marker-review/v1' || !review.confirmedAt || !review.styleDna) throw new Error('Review and confirm markers before generation.')\n+  const { source, imageSize, landmarks } = review.styleDna\n+  const result = reviewMarkers(landmarks, imageSize)\n+  if (!result.valid) throw new Error(result.error)\n+  return buildHumanoidStyleDna({ source, imageSize, landmarks })\n+}\n"
+    },
+    {
+      "sequence": 6,
+      "path": "apps/style-studio/src/studio-simplification.css",
+      "operation": "update",
+      "action": "WOULD_WRITE",
+      "before_sha256": "d0347d4291c8e9cf2d6baa4d091fc6370411030ed39d14d8ad4a011a8219acad",
+      "after_sha256": "cea155e719ab38bfaf2ced204b5ef7cd4eb36b85b45bc34813acfb12e7e890e8",
+      "diff": "--- a/apps/style-studio/src/studio-simplification.css\n+++ b/apps/style-studio/src/studio-simplification.css\n@@ -221,3 +221,21 @@\n     transition: none;\n   }\n }\n+\n+/* Reference controls participate in layout instead of covering marker tools. */\n+.studioApplicationShell .referenceManager.collapsed {\n+  position: relative;\n+  inset: auto;\n+  width: auto;\n+  flex: 0 0 auto;\n+  margin: 8px;\n+  box-shadow: none;\n+}\n+.studioApplicationShell .guidedMainWorkspace { overflow-y: auto; }\n+.studioApplicationShell .workspace { overflow-y: auto; }\n+.markerReview { flex: 0 0 auto; padding: 8px; border: 1px solid #46506c; border-radius: 8px; margin-bottom: 8px; }\n+.markerReview p { font-size: 13px; overflow-wrap: anywhere; }\n+.markerReview > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }\n+.markerReview button { padding: 8px 10px; background: #24293a; color: #fff; border: 1px solid #7180aa; border-radius: 7px; cursor: pointer; }\n+.markerReview button:disabled { opacity: .5; cursor: not-allowed; }\n+.studioApplicationShell .referenceWorkspace .sidebar { padding-top: 12px; }\n"
+    },
+    {
+      "sequence": 7,
+      "path": "package.json",
+      "operation": "update",
+      "action": "WOULD_WRITE",
+      "before_sha256": "555c756cfac5f25edc6b964d5925bb845dec468408e6cd315e1639cf4b151d6d",
+      "after_sha256": "53153bc1dbed6b1cf3a5239a8afbb3d21514a4fe4cc5adeb99541d483471861e",
+      "diff": "--- a/package.json\n+++ b/package.json\n@@ -20,7 +20,7 @@\n     \"animation-catalog:test\": \"pnpm --filter @low-poly-character-studio/api exec tsx --test ../../apps/style-studio/src/AnimationClipCatalog.test.ts\",\n     \"vertical-slice:test\": \"pnpm --filter @low-poly-character-studio/api exec tsx --test ../../apps/style-studio/src/vertical-slice-readiness.test.ts ../../apps/style-studio/src/vertical-slice-build-workflow.test.ts\",\n     \"pipeline-runner:test\": \"pnpm --filter @low-poly-character-studio/api test:pipeline-runner\",\n-    \"final-workflow:test\": \"pnpm --filter @low-poly-character-studio/api exec tsx --test ../../apps/style-studio/src/final-build-workflow.test.ts && pnpm vertical-slice:test && pnpm pipeline-runner:test && pnpm studio-responsive:test\",\n+    \"final-workflow:test\": \"pnpm --filter @low-poly-character-studio/api exec tsx --test ../../apps/style-studio/src/final-build-workflow.test.ts && pnpm vertical-slice:test && pnpm pipeline-runner:test && pnpm studio-responsive:test && pnpm marker-review:test\",\n     \"model-runner:test\": \"pnpm --filter @low-poly-character-studio/api test:model-runner\",\n     \"rig-runner:test\": \"pnpm --filter @low-poly-character-studio/api test:rig-runner\",\n     \"animation-runner:test\": \"pnpm --filter @low-poly-character-studio/api test:animation-runner && pnpm --filter @low-poly-character-studio/api test:final-artifact\",\n@@ -30,6 +30,7 @@\n     \"rig-review\": \"bash scripts/render-rig-review.sh\",\n     \"style-dna:test\": \"python3 packages/asset-compiler/blender/tests/test_style_dna.py\",\n     \"dev\": \"bash scripts/dev.sh\",\n-    \"api\": \"pnpm --filter @low-poly-character-studio/api dev\"\n+    \"api\": \"pnpm --filter @low-poly-character-studio/api dev\",\n+    \"marker-review:test\": \"pnpm --filter @low-poly-character-studio/api exec tsx --test ../../apps/style-studio/src/marker-review.test.ts\"\n   }\n }\n"
+    }
+  ],
+  "summary": {
+    "change_count": 7,
+    "proposed_write_count": 7,
+    "actual_write_count": 0,
+    "create_count": 2,
+    "update_count": 5
+  },
+  "handoff": {
+    "target": "verifier",
+    "artifact": "change-set.json",
+    "allowed": true,
+    "execution_status": "proposed_not_applied"
+  }
+}

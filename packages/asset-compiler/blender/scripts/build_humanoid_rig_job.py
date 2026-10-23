@@ -10,7 +10,7 @@ BLENDER_DIR = SCRIPT_DIR.parent
 sys.path.append(str(BLENDER_DIR))
 
 from generator.rigging import apply_humanoid_rig, write_rig_metadata
-from generator.style_dna import load_style_dna
+from generator.style_dna import dna_from_generation_metadata, load_style_dna
 
 
 DEFORMATION_PRESERVATION_SCHEMA = "humanoid-deformation-preservation/v1"
@@ -20,7 +20,9 @@ DEFORMATION_PRESERVATION_MODIFIER = "humanoid-basic-v1-volume-preservation"
 def parse_args():
     parser = argparse.ArgumentParser(description="Rig and skin one humanoid/chibi-v1 model artifact")
     parser.add_argument("--input-blend", type=Path, required=True)
-    parser.add_argument("--style-dna", type=Path, required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--style-dna", type=Path)
+    source.add_argument("--generation-metadata", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--job-id", default="local")
     args = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
@@ -88,8 +90,18 @@ def main():
     if not args.input_blend.is_file():
         raise ValueError(f"Model-stage blend does not exist: {args.input_blend}")
 
-    dna, style_document = load_style_dna(args.style_dna)
+    if args.generation_metadata:
+        model_metadata = json.loads(args.generation_metadata.read_text(encoding="utf-8"))
+        dna = dna_from_generation_metadata(model_metadata)
+        style_document = {"modelTypeId": model_metadata["modelTypeId"], "schema": model_metadata["styleDnaSchema"]}
+    else:
+        dna, style_document = load_style_dna(args.style_dna)
     bpy.ops.wm.open_mainfile(filepath=str(args.input_blend))
+    embedded = json.loads(bpy.context.scene.get("generationMetadata", "{}"))
+    if args.generation_metadata and embedded != model_metadata:
+        raise ValueError("Generation metadata does not match the input Blend model; rebuild or select its matching sidecar")
+    if not args.generation_metadata and embedded.get("styleAssembly"):
+        raise ValueError("Style-kit models require --generation-metadata so rig anchors use the resolved model proportions")
     root = bpy.data.objects.get("BaseHumanRoot")
     if root is None:
         raise ValueError("Model-stage blend is missing BaseHumanRoot")
@@ -99,6 +111,9 @@ def main():
     metadata["jobId"] = args.job_id
     metadata["modelTypeId"] = style_document["modelTypeId"]
     metadata["styleDnaSchema"] = style_document["schema"]
+    if args.generation_metadata:
+        metadata["generationMetadataSchema"] = model_metadata["schema"]
+        metadata["styleAssembly"] = model_metadata.get("styleAssembly")
     root["rigId"] = metadata["rigId"]
     root["rigMetadataSchema"] = metadata["schema"]
 

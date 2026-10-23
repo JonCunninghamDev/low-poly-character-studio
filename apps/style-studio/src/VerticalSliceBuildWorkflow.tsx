@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { HUMANOID_LANDMARK_KEYS, buildHumanoidStyleDna, type HumanoidLandmarkKey, type Point } from './final-build-workflow'
+import { MARKER_REVIEW_KEY, readConfirmedStyleDna } from './marker-review'
 import './final-build-workflow.css'
 
 const API_BASE = 'http://localhost:3001'
@@ -40,21 +40,7 @@ function readJson(key: string) {
 }
 
 function readStyleDna() {
-  const image = document.querySelector<HTMLImageElement>('.imageLayer img')
-  if (!image) throw new Error('Load and analyze a front reference before building.')
-  const landmarks: Partial<Record<HumanoidLandmarkKey, Point>> = {}
-  for (const key of HUMANOID_LANDMARK_KEYS) {
-    const marker = document.querySelector<HTMLElement>(`.imageLayer [data-landmark="${key}"]`)
-    if (!marker) continue
-    const x = Number.parseFloat(marker.style.left)
-    const y = Number.parseFloat(marker.style.top)
-    if (Number.isFinite(x) && Number.isFinite(y)) landmarks[key] = { x, y }
-  }
-  return buildHumanoidStyleDna({
-    source: image.currentSrc || image.src,
-    imageSize: { width: image.naturalWidth || image.width, height: image.naturalHeight || image.height },
-    landmarks,
-  })
+  return readConfirmedStyleDna(localStorage.getItem(MARKER_REVIEW_KEY))
 }
 
 function Preview({ url, clip }: { url: string; clip: string | null }) {

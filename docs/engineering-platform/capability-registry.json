@@ -1,0 +1,30 @@
+{
+  "schema_version": "capability-registry/v1",
+  "capabilities": [
+    {
+      "name": "studio.implement",
+      "provider": "builder",
+      "description": "Create and improve the Studio workflow.",
+      "trigger_terms": [
+        "studio",
+        "markers",
+        "generate",
+        "GLB"
+      ],
+      "dependencies": [],
+      "inputs": [
+        "product",
+        "request",
+        "scope",
+        "validation",
+        "constraints"
+      ],
+      "outputs": [
+        "tested Studio changes"
+      ],
+      "risk": "medium",
+      "minimum_tier": "basic",
+      "human_gate": false
+    }
+  ]
+}

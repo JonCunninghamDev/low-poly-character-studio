@@ -221,3 +221,31 @@
     transition: none;
   }
 }
+
+/* Reference controls participate in layout instead of covering marker tools. */
+.studioApplicationShell .referenceManager.collapsed {
+  position: relative;
+  inset: auto;
+  width: auto;
+  flex: 0 0 auto;
+  margin: 8px;
+  box-shadow: none;
+}
+.studioApplicationShell .guidedMainWorkspace { overflow-y: auto; }
+.studioApplicationShell .workspace { overflow-y: auto; }
+.markerReview { flex: 0 0 auto; padding: 8px; border: 1px solid #46506c; border-radius: 8px; margin-bottom: 8px; }
+.markerReview p { font-size: 13px; overflow-wrap: anywhere; }
+.markerReview > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.markerReview button { padding: 8px 10px; background: #24293a; color: #fff; border: 1px solid #7180aa; border-radius: 7px; cursor: pointer; }
+.markerReview button:disabled { opacity: .5; cursor: not-allowed; }
+.studioApplicationShell .referenceWorkspace .sidebar { padding-top: 12px; }
+
+.automaticAnalysisStatus { flex: 0 0 auto; padding: 8px 12px; font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+
+.referenceEmptyState { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; gap: 12px; }
+.referenceEmptyState p { max-width: 420px; }
+.referenceEmptyState button { padding: 10px 16px; border-radius: 8px; cursor: pointer; }
+/* The reference drawer is narrow even on desktop; its cards must not overlap. */
+.studioApplicationShell .referenceManager .referenceSlots { grid-template-columns: minmax(0, 1fr); }
+.studioApplicationShell .referenceManager .referenceSlotActions { flex-wrap: wrap; }
+.studioApplicationShell .referenceManager .referenceSlotActions button { min-width: 0; }

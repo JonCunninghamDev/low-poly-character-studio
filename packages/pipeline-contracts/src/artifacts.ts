@@ -1,5 +1,12 @@
 export type ArtifactKind =
   | "reference-set"
+  | "input-assessment"
+  | "subject-isolation"
+  | "orientation-assessment"
+  | "body-plan-assessment"
+  | "observed-features"
+  | "functional-hypotheses"
+  | "model-type-recommendation"
   | "classification"
   | "view-analysis"
   | "expected-part-observations"
@@ -16,9 +23,20 @@ export type EvidenceOrigin =
   | "inferred"
   | "mirrored"
   | "defaulted"
+  | "user-provided"
   | "user-confirmed"
   | "user-overridden"
   | "unavailable";
+
+export type RubricLevel = 0 | 1 | 2 | 3 | 4;
+
+export interface RubricCriterionResult {
+  criterionId: string;
+  level: RubricLevel;
+  confidence: number | null;
+  sourceArtifactIds?: readonly string[];
+  note?: string;
+}
 
 export interface ArtifactHeader<K extends ArtifactKind = ArtifactKind> {
   kind: K;
@@ -50,7 +68,145 @@ export interface ReferenceRecord {
 
 export interface ReferenceSetArtifact extends ArtifactHeader<"reference-set"> {
   modelTypeHint?: string;
+  userDescription?: string;
   references: readonly ReferenceRecord[];
+}
+
+export interface InputAssessmentArtifact extends ArtifactHeader<"input-assessment"> {
+  referenceId: string;
+  usability: Evidence<"usable" | "limited" | "unusable">;
+  subjectVisibility: Evidence<number>;
+  backgroundSeparation: Evidence<number>;
+  needsMoreViews: Evidence<boolean>;
+  rubric: readonly RubricCriterionResult[];
+}
+
+export interface NormalizedBounds {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+export interface NormalizedPoint {
+  x: number;
+  y: number;
+}
+
+export interface SubjectIsolationArtifact extends ArtifactHeader<"subject-isolation"> {
+  referenceId: string;
+  bounds: Evidence<NormalizedBounds>;
+  center: Evidence<NormalizedPoint>;
+  coverage: Evidence<number>;
+  silhouette: Evidence<"clear" | "partial" | "ambiguous" | "unavailable">;
+  rubric: readonly RubricCriterionResult[];
+}
+
+export interface OrientationAssessmentArtifact extends ArtifactHeader<"orientation-assessment"> {
+  referenceId: string;
+  facing: Evidence<"front" | "side" | "back" | "unknown">;
+  imageUp: Evidence<"up" | "down" | "unknown">;
+  yawDegrees: Evidence<number>;
+  pitchDegrees: Evidence<number>;
+  rollDegrees: Evidence<number>;
+  groundDirection: Evidence<"bottom" | "top" | "left" | "right" | "unknown">;
+  rubric: readonly RubricCriterionResult[];
+}
+
+export type BodyPlanId =
+  | "articulated/humanoid-bipedal"
+  | "articulated/quadrupedal"
+  | "articulated/multi-limbed"
+  | "compact/blob-amorphous"
+  | "compact/head-dominant"
+  | "elongated/serpentine"
+  | "radial/other"
+  | "unknown";
+
+export interface BodyPlanHypothesis {
+  bodyPlanId: BodyPlanId;
+  confidence: number;
+  rubricLevel: RubricLevel;
+  sourceArtifactIds?: readonly string[];
+  note?: string;
+}
+
+export interface BodyPlanAssessmentArtifact extends ArtifactHeader<"body-plan-assessment"> {
+  referenceId: string;
+  hypotheses: readonly BodyPlanHypothesis[];
+  selected: Evidence<BodyPlanId>;
+  rubric: readonly RubricCriterionResult[];
+}
+
+export type ObservedFeatureId =
+  | "body-core"
+  | "face"
+  | "eye"
+  | "mouth"
+  | "head-region"
+  | "limb"
+  | "appendage"
+  | "hand-grasper"
+  | "foot-support"
+  | "tail"
+  | "wing"
+  | "horn"
+  | "clothing"
+  | "other";
+
+export type FeatureObservationState = "observed" | "inferred" | "absent" | "ambiguous" | "unavailable";
+
+export interface ObservedFeature {
+  featureId: ObservedFeatureId;
+  state: FeatureObservationState;
+  count: Evidence<number>;
+  note?: string;
+}
+
+export interface ObservedFeaturesArtifact extends ArtifactHeader<"observed-features"> {
+  referenceId: string;
+  features: readonly ObservedFeature[];
+  rubric: readonly RubricCriterionResult[];
+}
+
+export type FunctionalRoleHypothesis =
+  | "root-core"
+  | "support-contact"
+  | "locomotor"
+  | "manipulator"
+  | "sensor-orientation"
+  | "articulator"
+  | "deformation-region";
+
+export interface FunctionalHypothesis {
+  role: FunctionalRoleHypothesis;
+  featureIds: readonly ObservedFeatureId[];
+  evidence: Evidence<string>;
+}
+
+export interface FunctionalHypothesesArtifact extends ArtifactHeader<"functional-hypotheses"> {
+  referenceId: string;
+  hypotheses: readonly FunctionalHypothesis[];
+  rubric: readonly RubricCriterionResult[];
+}
+
+export interface ModelTypeCandidate {
+  modelTypeId: string;
+  confidence: number;
+  evidenceSatisfied: readonly string[];
+  evidenceContradicted: readonly string[];
+  assumptionsRequired: readonly string[];
+}
+
+export interface ModelTypeRecommendationArtifact extends ArtifactHeader<"model-type-recommendation"> {
+  outcome: "recommended" | "unresolved" | "unsupported";
+  selected: Evidence<string>;
+  candidates: readonly ModelTypeCandidate[];
+  bodyPlanArtifactId: string;
+  observedFeaturesArtifactId: string;
+  functionalHypothesesArtifactId: string;
+  userDescription?: Evidence<string>;
+  rubric: readonly RubricCriterionResult[];
 }
 
 export interface ClassificationArtifact extends ArtifactHeader<"classification"> {
@@ -137,6 +293,14 @@ export interface AnimationPlanArtifact extends ArtifactHeader<"animation-plan"> 
 
 export type PipelineStage =
   | "ingest"
+  | "assess-input"
+  | "isolate-subject"
+  | "assess-orientation"
+  | "assess-body-plan"
+  | "observe-features"
+  | "infer-functions"
+  | "recommend-model-type"
+  | "map-model-parts"
   | "classify"
   | "analyze-view"
   | "observe-parts"
@@ -186,6 +350,13 @@ export interface ValidationReportArtifact extends ArtifactHeader<"validation-rep
 
 export type PipelineArtifact =
   | ReferenceSetArtifact
+  | InputAssessmentArtifact
+  | SubjectIsolationArtifact
+  | OrientationAssessmentArtifact
+  | BodyPlanAssessmentArtifact
+  | ObservedFeaturesArtifact
+  | FunctionalHypothesesArtifact
+  | ModelTypeRecommendationArtifact
   | ClassificationArtifact
   | ViewAnalysisArtifact
   | ExpectedPartObservationsArtifact
@@ -197,8 +368,21 @@ export type PipelineArtifact =
   | BuildManifestArtifact
   | ValidationReportArtifact;
 
+const allAfterAssessment = [
+  "map-model-parts", "classify", "analyze-view", "observe-parts", "build-part-graph", "derive-style-dna",
+  "plan-model", "plan-rig", "plan-animation", "model", "rig", "animate", "validate", "export",
+] as const;
+
 export const invalidatesAfter: Readonly<Record<PipelineStage, readonly PipelineStage[]>> = {
-  ingest: ["classify", "analyze-view", "observe-parts", "build-part-graph", "derive-style-dna", "plan-model", "plan-rig", "plan-animation", "model", "rig", "animate", "validate", "export"],
+  ingest: ["assess-input", "isolate-subject", "assess-orientation", "assess-body-plan", "observe-features", "infer-functions", "recommend-model-type", ...allAfterAssessment],
+  "assess-input": ["isolate-subject", "assess-orientation", "assess-body-plan", "observe-features", "infer-functions", "recommend-model-type", ...allAfterAssessment],
+  "isolate-subject": ["assess-orientation", "assess-body-plan", "observe-features", "infer-functions", "recommend-model-type", ...allAfterAssessment],
+  "assess-orientation": ["assess-body-plan", "observe-features", "infer-functions", "recommend-model-type", ...allAfterAssessment],
+  "assess-body-plan": ["infer-functions", "recommend-model-type", ...allAfterAssessment],
+  "observe-features": ["infer-functions", "recommend-model-type", ...allAfterAssessment],
+  "infer-functions": ["recommend-model-type", ...allAfterAssessment],
+  "recommend-model-type": [...allAfterAssessment],
+  "map-model-parts": ["observe-parts", "build-part-graph", "derive-style-dna", "plan-model", "plan-rig", "plan-animation", "model", "rig", "animate", "validate", "export"],
   classify: ["observe-parts", "build-part-graph", "derive-style-dna", "plan-model", "plan-rig", "plan-animation", "model", "rig", "animate", "validate", "export"],
   "analyze-view": ["observe-parts", "build-part-graph", "derive-style-dna", "plan-model", "plan-rig", "plan-animation", "model", "rig", "animate", "validate", "export"],
   "observe-parts": ["build-part-graph", "derive-style-dna", "plan-model", "plan-rig", "plan-animation", "model", "rig", "animate", "validate", "export"],

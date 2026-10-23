@@ -139,7 +139,7 @@ def validate_style_configuration(document: Any) -> dict[str, Any]:
         raise ValueError(f"Style configuration styleKitVersion must be {STYLE_KIT_VERSION}")
     if document.get("modelTypeId") != MODEL_TYPE_ID:
         raise ValueError(f"Style configuration modelTypeId must be {MODEL_TYPE_ID}")
-    if document.get("source") not in {"preset", "reference-analysis", "user"}:
+    if document.get("source") not in ("preset", "reference-analysis", "user"):
         raise ValueError("Style configuration source must be preset, reference-analysis, or user")
 
     selections = document.get("selections")
@@ -149,7 +149,7 @@ def validate_style_configuration(document: Any) -> dict[str, Any]:
     normalized_selections: dict[str, str] = {}
     for slot_id, variants in SLOT_VARIANTS.items():
         variant_id = selections.get(slot_id)
-        if variant_id not in variants:
+        if not isinstance(variant_id, str) or variant_id not in variants:
             choices = ", ".join(sorted(variants))
             raise ValueError(
                 f"Unknown variant {variant_id!r} for style slot {slot_id!r}; choose one of: {choices}"

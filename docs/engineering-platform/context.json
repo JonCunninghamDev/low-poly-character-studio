@@ -1,0 +1,102 @@
+{
+  "schema_version": "context-manifest/v1",
+  "run": {
+    "id": "context-957fa424-dff9-4a67-9422-f806758321a3",
+    "created_at": "2026-10-22T15:35:09.217042+00:00"
+  },
+  "agent": {
+    "role": "context",
+    "version": "1.0.0",
+    "service_tier": "basic",
+    "autonomy": "supervised",
+    "mode": "production"
+  },
+  "workflow": "low-poly-character-studio",
+  "goal": "Create Low Poly Character Studio: review markers, generate a model, rig and animate it, validate and export a GLB.",
+  "readiness": {
+    "ready_for_orchestration": true,
+    "missing_required": [],
+    "missing_recommended": [],
+    "blocking_conflicts": [],
+    "nonblocking_conflicts": []
+  },
+  "normalized_context": {
+    "constraints": "No production promotion. GitHub API Forbidden prevents issue/PR management and formal release metadata verification.",
+    "product": "Existing React/Vite Studio, Express jobs API, Python/Blender compiler. Preserve humanoid/chibi-v1 gold standard.",
+    "request": "User explicitly requests engineering-platform for the Studio and confirms model-type-specific generation/animation, including humanoid and tree examples.",
+    "scope": "Existing Studio: image upload, type assessment/confirmation, Blender geometry, type-specific rig and animations, validated GLB. Humanoids need idle/walk/run/kneel/lie actions; trees need appropriate tree motion. First bounded increment: marker confirmation and durable generation handoff.",
+    "validation": "Node 22/pnpm 9 build and contracts; browser checks at 1366x610 and mobile; real Blender generation still blocked by download host 403."
+  },
+  "provenance": [
+    {
+      "key": "product",
+      "value": "Existing React/Vite Studio, Express jobs API, Python/Blender compiler. Preserve humanoid/chibi-v1 gold standard.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high",
+      "observed_at": null
+    },
+    {
+      "key": "request",
+      "value": "User explicitly requests engineering-platform for the Studio and confirms model-type-specific generation/animation, including humanoid and tree examples.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high",
+      "observed_at": null
+    },
+    {
+      "key": "scope",
+      "value": "Existing Studio: image upload, type assessment/confirmation, Blender geometry, type-specific rig and animations, validated GLB. Humanoids need idle/walk/run/kneel/lie actions; trees need appropriate tree motion. First bounded increment: marker confirmation and durable generation handoff.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high",
+      "observed_at": null
+    },
+    {
+      "key": "validation",
+      "value": "Node 22/pnpm 9 build and contracts; browser checks at 1366x610 and mobile; real Blender generation still blocked by download host 403.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high",
+      "observed_at": null
+    },
+    {
+      "key": "constraints",
+      "value": "No production promotion. GitHub API Forbidden prevents issue/PR management and formal release metadata verification.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high",
+      "observed_at": null
+    }
+  ],
+  "questions_for_human": [],
+  "capabilities": {
+    "used": [
+      "inspect_context_contract",
+      "normalize_supplied_context",
+      "identify_missing_context",
+      "detect_explicit_conflicts",
+      "produce_context_manifest"
+    ],
+    "available_unused": [
+      "formulate_blocking_questions"
+    ],
+    "locked_by_tier": {
+      "managed": [
+        "retrieve_approved_context",
+        "verify_source_provenance",
+        "evaluate_context_freshness",
+        "generate_role_specific_context",
+        "request_blocking_context_interactively"
+      ],
+      "full": [
+        "continuous_context_maintenance",
+        "automatic_context_enrichment",
+        "sensitivity_classification",
+        "cross_project_context_relationships",
+        "durable_verified_context_updates",
+        "stale_context_monitoring"
+      ]
+    }
+  },
+  "handoff": {
+    "target": "orchestrator",
+    "artifact": "context.json",
+    "allowed": true
+  }
+}

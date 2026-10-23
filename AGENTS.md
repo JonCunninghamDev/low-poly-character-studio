@@ -12,6 +12,15 @@ GitHub state and repository files are authoritative. Chat history is context, no
 - Pull requests are the canonical implementation, synchronization, milestone, and promotion record.
 - `docs/product-vision.md`, `docs/architecture.md`, `docs/task-management.md`, and applicable gold-standard documents define product and engineering constraints.
 
+## Adopted Engineering Platform
+
+- Read `engineering-policy.json` and the synchronized `.engineering-platform/agent/operating-contract-v1.md` at startup alongside the local required reads below.
+- The verified release is `v1.0.0`, immutable commit `b107c9306161b395cbcaffebb55e47850b999560`; `.engineering-platform/release.json` records the copied source files and hashes.
+- Product-specific instructions in this file and the local product/architecture/visual standards remain authoritative over shared defaults. Existing Hotfix and Sync routes are preserved.
+- `docs/engineering-platform-adoption.md` maps validation stages to the existing checks, records compatibility/rollback, and distinguishes released governance from experimental execution adapters.
+- Ordinary development uses the checked-in policy and synchronized files. Do not fetch platform steering on every run or adopt unreleased `develop` as consumer authority.
+- Run `python3 scripts/test-platform-adoption.py` after policy/pin/workflow changes. Keep the full existing Studio CI and artifact-review requirements.
+
 ## Completion-or-exception operating model
 
 The agent works continuously toward the current repository-defined goal. It should select, implement, validate, integrate, and close the tasks required to achieve that goal without requesting routine permission.

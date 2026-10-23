@@ -72,6 +72,11 @@ def main():
     bad_variant = json.loads(json.dumps(default))
     bad_variant["selections"]["eyes"] = "laser"
     assert_raises("Unknown variant", lambda: validate_style_configuration(bad_variant))
+    bad_variant["selections"]["eyes"] = ["round"]
+    assert_raises("Unknown variant", lambda: validate_style_configuration(bad_variant))
+    bad_source = json.loads(json.dumps(default))
+    bad_source["source"] = {}
+    assert_raises("source must be", lambda: validate_style_configuration(bad_source))
 
     bad_range = json.loads(json.dumps(default))
     bad_range["parameters"]["head-width"] = 2.0

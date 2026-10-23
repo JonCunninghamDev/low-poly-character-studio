@@ -1,0 +1,36 @@
+{
+  "schema_version": "context-input/v1",
+  "goal": "Create Low Poly Character Studio: review markers, generate a model, rig and animate it, validate and export a GLB.",
+  "context": [
+    {
+      "key": "product",
+      "value": "Existing React/Vite Studio, Express jobs API, Python/Blender compiler. Preserve humanoid/chibi-v1 gold standard.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high"
+    },
+    {
+      "key": "request",
+      "value": "User explicitly requests engineering-platform for the Studio and confirms model-type-specific generation/animation, including humanoid and tree examples.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high"
+    },
+    {
+      "key": "scope",
+      "value": "Existing Studio: image upload, type assessment/confirmation, Blender geometry, type-specific rig and animations, validated GLB. Humanoids need idle/walk/run/kneel/lie actions; trees need appropriate tree motion. First bounded increment: marker confirmation and durable generation handoff.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high"
+    },
+    {
+      "key": "validation",
+      "value": "Node 22/pnpm 9 build and contracts; browser checks at 1366x610 and mobile; real Blender generation still blocked by download host 403.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high"
+    },
+    {
+      "key": "constraints",
+      "value": "No production promotion. GitHub API Forbidden prevents issue/PR management and formal release metadata verification.",
+      "source": "user conversation and repository inspection",
+      "confidence": "high"
+    }
+  ]
+}

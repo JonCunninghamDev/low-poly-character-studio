@@ -143,6 +143,11 @@ jobs:
       - name: Test humanoid StyleDNA contracts
         run: python3 packages/asset-compiler/blender/tests/test_style_dna.py
 
+      - name: Test Chibi style-kit assembly and review contracts
+        run: |
+          python3 packages/asset-compiler/blender/tests/test_style_kit.py
+          python3 packages/asset-compiler/blender/tests/test_style_review.py
+
       - name: Test manifest compiler contracts without Blender
         run: python3 packages/asset-compiler/compiler/test_manifest_contract.py
 
@@ -214,6 +219,12 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: xvfb-run -a -s '-screen 0 1280x1024x24' bash scripts/run-animation-smoke.sh
 
+      - name: Build and review Chibi style-kit configurations
+        env:
+          BLENDER_COMMAND: ${{ steps.blender.outputs.executable }}
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: xvfb-run -a -s '-screen 0 1280x1024x24' python3 scripts/chibi_style_review.py --output-dir image-analysis/output/chibi-style-review
+
       - name: Upload Blender review diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -224,5 +235,6 @@ jobs:
             image-analysis/output/pr-21-rig-review-failed.zip
             image-analysis/output/animation-smoke
             image-analysis/output/manifest-compiler-smoke
+            image-analysis/output/chibi-style-review
           if-no-files-found: warn
           retention-days: 7
