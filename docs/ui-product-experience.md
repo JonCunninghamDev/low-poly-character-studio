@@ -6,7 +6,7 @@ The product owner's latest supplied screenshots and direction supersede the defa
 
 - Start with a single upload/drop area. Show the original image after selection, a replace action and **Convert to 3D**. Description is optional and disclosed on demand.
 - Show real analysis/conversion progress in the model view. Users can return to the original image while the job runs. Do not simulate completion or fabricate models.
-- If the supported humanoid interpretation is uncertain, ask one plain-language confirmation. Explicitly reject unsupported morphology; do not silently force a humanoid.
+- If the supported humanoid interpretation is uncertain, ask one plain-language confirmation. Keep unsupported generators unavailable. Treat heuristic morphology recommendations as advisory: allow an explicit humanoid confirmation without overwriting the machine evidence, and never silently force a humanoid.
 - Display the validated generated GLB with rotation/zoom. Animation controls list clips actually loaded from that GLB and support selection and play/pause. Only validated output gets a download link.
 - Errors, replaced inputs and retries must remove stale output/downloads. Late requests cannot replace newer input/results. Aborting the browser request does not claim to cancel an already submitted server job.
 - Keep marker placement, workflow steps, readiness panels and technical diagnostics in the existing optional **Advanced editor**, opened separately so the minimal session is preserved.

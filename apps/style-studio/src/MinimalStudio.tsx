@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { analyzeCharacterImageUrl } from "./character-image-assessment";
+import {
+  analyzeCharacterImageUrl,
+  persistableCharacterImageAssessment,
+} from "./character-image-assessment";
 import { humanoidChibiAnalysisAdapter } from "./reference-analysis";
 import { buildHumanoidStyleDna } from "./final-build-workflow";
 import { createReferenceIntent } from "./reference-intent";
@@ -193,14 +196,13 @@ export function MinimalStudio() {
         );
       }
       const plan = generic.bodyPlan.selected.value;
-      if (plan && plan !== "unknown" && plan !== "articulated/humanoid-bipedal")
-        throw new Error(
-          "This shape is not supported yet. The current generator supports stylized humanoids. Try a humanoid reference.",
-        );
-      if ((!plan || plan === "unknown") && !acceptedHumanoid) {
+      // A silhouette heuristic can misread stylized limbs/backgrounds. Its
+      // recommendation is evidence, not authority to reject a user's subject.
+      // An override is explicit and leaves the original inference intact.
+      if (plan !== "articulated/humanoid-bipedal" && !acceptedHumanoid) {
         setConfirmHumanoid(true);
         setStatus(
-          "We could not confidently identify the shape. Is this a humanoid character?",
+          "Image analysis may have misread the shape. This generator supports humanoid characters. Is that what you uploaded?",
         );
         return;
       }
@@ -222,12 +224,14 @@ export function MinimalStudio() {
       const created = await request<{ job: Job }>("/jobs", abort.signal, {
         modelTypeId: "humanoid/chibi-v1",
         input: {
+          imageAssessment: persistableCharacterImageAssessment(generic),
           styleDna,
           analysis: {
             ...analysis,
             modelTypeSelection: {
               source: acceptedHumanoid ? "user" : "image-assessment",
               modelTypeId: "humanoid/chibi-v1",
+              inferredBodyPlan: plan,
             },
           },
           referenceSet: {
@@ -287,8 +291,13 @@ export function MinimalStudio() {
         {},
       );
       if (ticket !== run.current) return;
-      if (!completed.validation || typeof completed.validation.valid !== "boolean")
-        throw new Error("The conversion service did not return model validation. Please try again.");
+      if (
+        !completed.validation ||
+        typeof completed.validation.valid !== "boolean"
+      )
+        throw new Error(
+          "The conversion service did not return model validation. Please try again.",
+        );
       if (!completed.validation.valid)
         throw new Error(
           completed.validation.errors.join(" ") ||
@@ -304,8 +313,8 @@ export function MinimalStudio() {
           reason instanceof TypeError
             ? "Could not reach the conversion service. Please try again."
             : reason instanceof Error
-            ? reason.message
-            : "Conversion failed. Please try again.",
+              ? reason.message
+              : "Conversion failed. Please try again.",
         );
         setStatus("");
       }

@@ -153,14 +153,43 @@ try {
       .getByRole("heading", { name: "Your animations will appear here" })
       .waitFor();
     await page.getByRole("tab", { name: "Uploaded image" }).click();
-    await page
-      .locator("input[type=file]")
-      .setInputFiles(
-        path.join(
-          root,
-          "apps/style-studio/public/references/little-guy/front.png",
-        ),
-      );
+    // Reproduce the owner's low-resolution, dark-background approved humanoid.
+    // The source sheet is checked in; crops are generated only in browser memory.
+    if (viewport.width !== 390) {
+      const source = (
+        await readFile(
+          path.join(root, "docs/reference/gold-standard-humanoid-chibi.png"),
+        )
+      ).toString("base64");
+      const png = await page.evaluate(async (encoded) => {
+        const image = new Image();
+        image.src = `data:image/png;base64,${encoded}`;
+        await image.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = 164;
+        canvas.height = 239;
+        canvas
+          .getContext("2d")
+          .drawImage(image, 0, 65, 290, 450, 0, 0, 164, 239);
+        return canvas.toDataURL("image/png").split(",")[1];
+      }, source);
+      await page
+        .locator("input[type=file]")
+        .setInputFiles({
+          name: "gold-standard-front.png",
+          mimeType: "image/png",
+          buffer: Buffer.from(png, "base64"),
+        });
+    } else {
+      await page
+        .locator("input[type=file]")
+        .setInputFiles(
+          path.join(
+            root,
+            "apps/style-studio/public/references/little-guy/front.png",
+          ),
+        );
+    }
     await page
       .getByRole("img", { name: "Uploaded character reference" })
       .waitFor();
@@ -178,6 +207,7 @@ try {
         document.querySelector(".minimalEmpty h2")?.textContent !==
         "Reading your image…",
     );
+    if (viewport.width !== 390) await confirmation.waitFor();
     if (await confirmation.isVisible()) await confirmation.click();
     await page
       .getByRole("heading", { name: "Converting to a 3D model…", exact: true })
@@ -212,6 +242,24 @@ try {
       path: path.join(output, `animations-fixture-${viewport.width}.png`),
     });
     assert.ok(payload.input.styleDna.landmarks.FeetBottom);
+    if (viewport.width !== 390) {
+      assert.equal(
+        payload.input.imageAssessment.bodyPlan.selected.value,
+        "unknown",
+      );
+      assert.match(
+        payload.input.imageAssessment.bodyPlan.selected.note,
+        /fragmented/,
+      );
+      assert.equal(payload.input.analysis.modelTypeSelection.source, "user");
+      assert.equal(
+        payload.input.analysis.modelTypeSelection.inferredBodyPlan,
+        "unknown",
+      );
+      assert.equal(payload.input.referenceSet.references.front.width, 164);
+      assert.equal(payload.input.referenceSet.references.front.height, 239);
+    }
+
     assert.equal(payload.input.referenceSet.userIntent.decision, "skipped");
     assert.equal(
       await page.evaluate(
@@ -261,6 +309,47 @@ try {
         .getAttribute("aria-selected"),
       "true",
     );
+    if (viewport.width === 1366) {
+      // A real non-humanoid silhouette must also offer a choice rather than
+      // being silently forced into the only available generator.
+      await page.getByRole("tab", { name: "Uploaded image" }).click();
+      const blob = await page.evaluate(() => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 120;
+        canvas.height = 120;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#f5f5f5";
+        ctx.fillRect(0, 0, 120, 120);
+        ctx.fillStyle = "#bc704e";
+        ctx.beginPath();
+        ctx.ellipse(60, 63, 42, 46, 0, 0, Math.PI * 2);
+        ctx.fill();
+        return canvas.toDataURL("image/png").split(",")[1];
+      });
+      await page
+        .locator("input[type=file]")
+        .setInputFiles({
+          name: "blob.png",
+          mimeType: "image/png",
+          buffer: Buffer.from(blob, "base64"),
+        });
+      const before = JSON.stringify(payload);
+      await page
+        .getByRole("button", { name: "Convert to 3D", exact: true })
+        .click();
+      await confirmation.waitFor();
+      assert.equal(
+        JSON.stringify(payload),
+        before,
+        "a non-humanoid inference must not automatically create a humanoid job",
+      );
+      await page
+        .getByRole("button", { name: "Back to image", exact: true })
+        .click();
+      await page
+        .getByRole("img", { name: "Uploaded character reference" })
+        .waitFor();
+    }
     assert.deepEqual(errors, []);
     results.push({
       viewport,
